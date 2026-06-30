@@ -1,0 +1,18 @@
+﻿{
+    "schemaVersion":  1,
+    "initializedMarker":  "codex-project-git-workflow: initialized",
+    "initializedAt":  "2026-07-01 00:21:05 +08:00",
+    "projectName":  "EternalRicochet",
+    "repoRoot":  "D:\\WebProjects\\EternalRicochet",
+    "safeDirectory":  "D:/WebProjects/EternalRicochet",
+    "statusCommand":  "git -c safe.directory=D:/WebProjects/EternalRicochet status --short --branch",
+    "validationCommands":  [
+                               "node --check src/logic/engine/legacyGame.js",
+                               "npm run build"
+                           ],
+    "stagingPolicy":  "ask each time",
+    "commitCommand":  "",
+    "pushCommand":  "git -c safe.directory=D:/WebProjects/EternalRicochet push -u origin HEAD",
+    "docsRequirement":  "",
+    "forbiddenCommands":  ""
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>无尽回弹 / ETERNAL RICOCHET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="game-wrapper" class="crt relative w-full h-full">
+        <!-- 游戏主画布 -->
+        <canvas id="gameCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+        <!-- 游戏内HUD (Heads Up Display) -->
+        <div id="hud" class="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-start hidden z-10 pointer-events-none">
+            <div class="flex flex-col gap-3">
+                <div id="health-bar" class="flex gap-2 text-red-500 text-2xl hud-icon">
+                    <!-- 爱心由JS动态生成 -->
+                </div>
+                <div class="text-cyan-400 font-bold tracking-wider text-sm md:text-base font-cyber">
+                    弹药 AMMO: <span id="ammo-display" class="text-yellow-400 text-lg">1</span> / 1
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl md:text-5xl font-bold text-white neon-text font-cyber leading-none transition-transform duration-100" id="score-container">
+                    <span id="score">0</span>
+                </div>
+                <div class="text-xs md:text-sm text-cyan-500 font-bold mt-1 font-cyber">SCORE</div>
+            </div>
+        </div>
+
+        <!-- 菜单面板 -->
+        <div id="ui-layer" class="absolute inset-0 flex flex-col justify-center items-center z-20 bg-black/70 backdrop-blur-sm transition-opacity duration-300">
+            
+            <!-- 主菜单 -->
+            <div id="main-menu" class="w-[90%] max-w-2xl bg-gray-900/80 p-8 rounded-3xl border-2 border-cyan-500/50 shadow-[0_0_30px_rgba(0,255,255,0.2)] text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
+                
+                <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-blue-600 mb-2 neon-text tracking-wider mt-4">无尽回弹</h1>
+                <h2 class="text-lg md:text-xl text-cyan-400 tracking-[0.3em] mb-6 font-cyber uppercase">Eternal Ricochet</h2>
+                
+                <div class="inline-block bg-cyan-900/50 px-4 py-1 rounded-full text-xs text-cyan-200 border border-cyan-700/50 mb-6">
+                    🏆 2024 金海豚奖 Game Jam 命题响应作
+                </div>
+
+                <div class="text-left text-sm md:text-base text-gray-300 space-y-3 mb-8 bg-black/50 p-5 rounded-xl border border-gray-700/50">
+                    <p class="flex items-start">
+                        <span class="mr-2 text-cyan-400">🔹</span>
+                        <span><strong class="text-cyan-400">有限 (Finite):</strong> 空间是封闭的，且你只有<strong class="text-yellow-400">一颗子弹</strong>。射出后必须靠近拾取，或使用引力召回。</span>
+                    </p>
+                    <p class="flex items-start">
+                        <span class="mr-2 text-red-400">🔹</span>
+                        <span><strong class="text-red-400">无限 (Infinite):</strong> 面对无尽涌来的敌人，利用子弹的弹射与召回穿透轨迹，创造无限可能。</span>
+                    </p>
+                    <div class="mt-4 pt-4 border-t border-gray-700/50 text-gray-400 text-xs md:text-sm">
+                        <p class="mb-1">⌨️ <strong>键鼠:</strong> WASD移动 | 鼠标左键射击 | 右键或空格召回子弹</p>
+                        <p>📱 <strong>触屏:</strong> 左侧摇杆移动 | 右侧滑动瞄准松开射击 | 点击右半屏召回</p>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="px-10 py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-full transition-all transform hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.6)] shadow-[0_0_15px_rgba(0,255,255,0.3)] text-lg tracking-widest outline-none">
+                    开始连接 (START)
+                </button>
+            </div>
+
+            <!-- 游戏结束面板 -->
+            <div id="game-over-menu" class="hidden w-[90%] max-w-md bg-gray-900/90 p-8 rounded-3xl border-2 border-red-500/50 shadow-[0_0_30px_rgba(255,0,0,0.3)] text-center">
+                <h2 class="text-5xl font-black text-red-500 mb-2 neon-text tracking-widest font-cyber">SIGNAL LOST</h2>
+                <p class="text-gray-400 mb-6">最终得分</p>
+                <div class="text-6xl font-bold text-white mb-2 font-cyber neon-text" id="final-score">0</div>
+                <div class="text-sm text-yellow-500 mb-8 font-cyber">最高分 BEST: <span id="high-score">0</span></div>
+                
+                <button id="restart-btn" class="w-full px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(255,0,0,0.4)] text-lg tracking-widest outline-none">
+                    重新启动 (REBOOT)
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <script type="module" src="/src/main.js"></script>
+</body>
+</html>

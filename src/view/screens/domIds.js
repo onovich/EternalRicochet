@@ -1,0 +1,16 @@
+export const DOM_IDS = Object.freeze({
+  wrapper: "game-wrapper",
+  canvas: "gameCanvas",
+  hud: "hud",
+  healthBar: "health-bar",
+  ammoDisplay: "ammo-display",
+  score: "score",
+  scoreContainer: "score-container",
+  uiLayer: "ui-layer",
+  mainMenu: "main-menu",
+  gameOverMenu: "game-over-menu",
+  finalScore: "final-score",
+  highScore: "high-score",
+  startButton: "start-btn",
+  restartButton: "restart-btn",
+});

@@ -1,0 +1,95 @@
+﻿{
+    "schemaVersion":  1,
+    "initializedMarker":  "codex-project-ops-workflow: initialized",
+    "initializedAt":  "2026-07-01 00:21:05 +08:00",
+    "projectName":  "EternalRicochet",
+    "repoRoot":  "D:\\WebProjects\\EternalRicochet",
+    "validateSequence":  [
+                             "structureCheck",
+                             "build"
+                         ],
+    "operations":  {
+                       "envCheck":  {
+                                        "commands":  [
+                                                         "node --version",
+                                                         "npm --version"
+                                                     ]
+                                    },
+                       "restoreDeps":  {
+                                           "commands":  [
+                                                            "npm install"
+                                                        ]
+                                       },
+                       "installDeps":  {
+                                           "commands":  [
+
+                                                        ]
+                                       },
+                       "build":  {
+                                     "commands":  [
+                                                      "npm run build"
+                                                  ]
+                                 },
+                       "test":  {
+                                    "commands":  [
+
+                                                 ]
+                                },
+                       "lint":  {
+                                    "commands":  [
+
+                                                 ]
+                                },
+                       "format":  {
+                                      "commands":  [
+
+                                                   ]
+                                  },
+                       "typecheck":  {
+                                         "commands":  [
+
+                                                      ]
+                                     },
+                       "structureCheck":  {
+                                              "commands":  [
+                                                               "node --check src/logic/engine/legacyGame.js"
+                                                           ]
+                                          },
+                       "codegen":  {
+                                       "commands":  [
+
+                                                    ]
+                                   },
+                       "docsCheck":  {
+                                         "commands":  [
+
+                                                      ]
+                                     },
+                       "smoke":  {
+                                     "urls":  [
+                                                  "http://127.0.0.1:4173/EternalRicochet/"
+                                              ],
+                                     "commands":  [
+
+                                                  ]
+                                 },
+                       "package":  {
+                                       "commands":  [
+
+                                                    ]
+                                   },
+                       "releaseDryRun":  {
+                                             "commands":  [
+
+                                                          ]
+                                         }
+                   },
+    "devServer":  {
+                      "startCommand":  "npm run dev -- --port 4173",
+                      "healthUrl":  "http://127.0.0.1:4173/EternalRicochet/",
+                      "readyText":  "Local:",
+                      "startupTimeoutSeconds":  30,
+                      "pidFile":  ".codex/project-ops-devserver.pid"
+                  },
+    "forbiddenPolicy":  "Do not run destructive clean/reset/deploy commands unless the user explicitly asks."
+}
