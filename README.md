@@ -45,7 +45,7 @@ The build has been verified locally with Vite and emits asset paths under `/Eter
 
 GitHub Pages deployment is configured through `.github/workflows/deploy.yml` using the official Pages actions.<br/>**GitHub Pages 部署已通过 `.github/workflows/deploy.yml` 配置，使用官方 Pages Actions。**
 
-The expected Pages URL is `https://onovich.github.io/EternalRicochet/` after the repository is pushed and Pages is set to GitHub Actions.<br/>**仓库推送后，并在 Pages 设置中选择 GitHub Actions 作为来源，预期访问地址为 `https://onovich.github.io/EternalRicochet/`。**
+The repository Pages settings currently resolve the site to `http://blog.onovich.com/EternalRicochet/`; `https://onovich.github.io/EternalRicochet/` redirects to that custom domain.<br/>**当前仓库 Pages 设置会将站点解析到 `http://blog.onovich.com/EternalRicochet/`；`https://onovich.github.io/EternalRicochet/` 会跳转到该自定义域名。**
 
 ## Repository
 
