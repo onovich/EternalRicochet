@@ -9,6 +9,7 @@
     "check:src": "node scripts/check-src.mjs",
     "smoke:logic": "node scripts/smoke-core.mjs",
     "smoke:assets": "node scripts/smoke-assets.mjs",
+    "smoke:offline-readiness": "node scripts/smoke-offline-readiness.mjs",
     "smoke:pwa": "node scripts/smoke-pwa.mjs",
     "smoke:release": "node scripts/smoke-release-gates.mjs",
     "validate": "npm run check:src && npm run smoke:logic && npm run build && npm run smoke:assets && npm run smoke:release && npm run smoke:pwa",
