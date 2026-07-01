@@ -184,6 +184,13 @@ export const GAME_CONFIG = Object.freeze({
       },
     },
   },
+  settings: {
+    storageKey: "eternalRicochetSettings",
+    schemaVersion: 1,
+    defaultRenderQuality: "high",
+    defaultAudioMuted: false,
+    defaultFullscreenPreferred: false,
+  },
   feedback: {
     shotShake: 3,
     wallBounceShake: 2,

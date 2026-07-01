@@ -30,6 +30,12 @@ import { createPerformanceMetrics } from "../src/logic/engine/performanceMetrics
 import { createRenderer } from "../src/logic/engine/renderer.js";
 import { resolveRenderQuality } from "../src/logic/engine/renderQuality.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
+import {
+  createDefaultSettings,
+  createSettingsStore,
+  readSettings,
+  sanitizeSettings,
+} from "../src/logic/engine/settings.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
 
 const effects = {
@@ -345,13 +351,35 @@ function smokeMetaProgressionUpgradeEffects() {
 }
 
 function smokeRenderQualityResolution() {
-  const low = resolveRenderQuality({ search: "?erQuality=low" });
+  const low = resolveRenderQuality({ search: "?erQuality=low", devMode: true });
   assert.equal(low.tier, "low");
+  assert.equal(low.source, "url");
   assert.equal(low.profile.glowScale, GAME_CONFIG.renderQuality.tiers.low.glowScale);
   assert.equal(low.profile.particleCap, GAME_CONFIG.renderQuality.tiers.low.particleCap);
 
-  const fallback = resolveRenderQuality({ search: "?erQuality=unknown" });
+  const devOverride = resolveRenderQuality({
+    settings: { renderQuality: "medium" },
+    search: "?erQuality=low",
+    devMode: true,
+  });
+  assert.equal(devOverride.tier, "low");
+  assert.equal(devOverride.source, "url");
+
+  const settingsQuality = resolveRenderQuality({
+    settings: { renderQuality: "medium" },
+    search: "?erQuality=low",
+    devMode: false,
+  });
+  assert.equal(settingsQuality.tier, "medium");
+  assert.equal(settingsQuality.source, "settings");
+
+  const productionUrlIgnored = resolveRenderQuality({ search: "?erQuality=low" });
+  assert.equal(productionUrlIgnored.tier, GAME_CONFIG.renderQuality.defaultTier);
+  assert.equal(productionUrlIgnored.source, "default");
+
+  const fallback = resolveRenderQuality({ search: "?erQuality=unknown", devMode: true });
   assert.equal(fallback.tier, GAME_CONFIG.renderQuality.defaultTier);
+  assert.equal(fallback.source, "default");
   assert.equal(fallback.profile.glowScale, GAME_CONFIG.renderQuality.tiers.high.glowScale);
 }
 
@@ -518,6 +546,45 @@ function smokeRendererProjectileTrailQualitySwitch() {
   assert.equal(hasProjectileTrailStroke(lowCtx), false);
 }
 
+function smokeSettingsPersistence() {
+  const storage = createMemoryStorage();
+  assert.deepEqual(readSettings(storage), createDefaultSettings());
+
+  storage.setItem(GAME_CONFIG.settings.storageKey, "{bad json");
+  assert.deepEqual(readSettings(storage), createDefaultSettings());
+
+  const sanitized = sanitizeSettings({
+    schemaVersion: -10,
+    renderQuality: "medium",
+    audioMuted: true,
+    fullscreenPreferred: "",
+    unknown: "ignored",
+  });
+  assert.deepEqual(sanitized, {
+    schemaVersion: GAME_CONFIG.settings.schemaVersion,
+    renderQuality: "medium",
+    audioMuted: true,
+    fullscreenPreferred: false,
+  });
+
+  const invalid = sanitizeSettings({ renderQuality: "ultra" });
+  assert.equal(invalid.renderQuality, GAME_CONFIG.settings.defaultRenderQuality);
+
+  const store = createSettingsStore({ storage });
+  const update = store.update({
+    renderQuality: "low",
+    audioMuted: true,
+    fullscreenPreferred: true,
+  });
+  assert.equal(update.saved, true);
+  assert.deepEqual(readSettings(storage), {
+    schemaVersion: GAME_CONFIG.settings.schemaVersion,
+    renderQuality: "low",
+    audioMuted: true,
+    fullscreenPreferred: true,
+  });
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -601,6 +668,7 @@ smokeDevStressSeedResolution();
 smokeParticlePoolCapacityAndReset();
 smokeRendererLowQualityGlowScale();
 smokeRendererProjectileTrailQualitySwitch();
+smokeSettingsPersistence();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",

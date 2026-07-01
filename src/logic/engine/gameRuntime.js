@@ -26,6 +26,7 @@ import { createPerformanceMetrics } from "./performanceMetrics.js";
 import { createRenderer } from "./renderer.js";
 import { resolveRenderQuality } from "./renderQuality.js";
 import { ComboState } from "./scoring.js";
+import { createSettingsStore } from "./settings.js";
 import { createUpgradeShop } from "../../view/components/upgradeShop.js";
 
 export function createGameRuntime({
@@ -55,9 +56,15 @@ export function createGameRuntime({
   let started = false;
   let shooterIntroduced = false;
   let lastSettlement = null;
+  const settingsStore = createSettingsStore({
+    storage: windowRef.localStorage,
+    config: config.settings,
+  });
   const renderQuality = resolveRenderQuality({
     search: windowRef.location?.search ?? "",
     config: config.renderQuality,
+    settings: settingsStore.getState(),
+    devMode,
   });
   const devStressSeed = resolveDevStressSeed({
     enabled: devMode,
@@ -466,6 +473,7 @@ export function createGameRuntime({
       })),
       combo: combo.getHudState(),
       meta: metaStore.getState(),
+      settings: settingsStore.getState(),
       settlement: lastSettlement,
       performance: performanceMetrics.getState(),
       renderQuality,
