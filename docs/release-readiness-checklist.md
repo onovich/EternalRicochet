@@ -18,6 +18,7 @@ This runs:
 - `npm run build`
 - `npm run smoke:assets`
 - `npm run smoke:offline-readiness`
+- `npm run smoke:service-worker`
 - `npm run smoke:offline-gate`
 - `npm run smoke:release`
 - `npm run smoke:pwa`
@@ -45,6 +46,7 @@ Create a fresh production build:
 npm run build
 npm run smoke:assets
 npm run smoke:offline-readiness
+npm run smoke:service-worker
 npm run smoke:offline-gate
 npm run smoke:release
 ```
@@ -60,15 +62,24 @@ The offline-readiness dry-run verifies:
 - `dist/index.html`, hashed JS/CSS bundles, `dist/manifest.webmanifest`, and both local SVG icons exist after build.
 - Built JS/CSS asset references use the hosted `/EternalRicochet/` path.
 - The production manifest keeps `id`, `start_url`, and `scope` at `/EternalRicochet/`.
-- Source and production output contain no service-worker files, service-worker registration, Cache API runtime usage, Workbox tooling, unapproved external runtime URLs, or offline-support claims.
-- This check is a dry-run only. It does not register a service worker, populate browser caches, or prove offline reload behavior.
+- `dist/service-worker.js` exists after build and precaches only the app shell, hashed bundles, manifest, and local icons.
+- The only service-worker file is the generated `dist/service-worker.js`; source/public service-worker files, Workbox tooling, unapproved external runtime URLs, provider/backend paths, push notifications, and background sync still fail validation.
+- This static check does not replace browser evidence for registration, update, offline reload, recovery, or rollback behavior.
 
 The offline approval-gate smoke verifies:
 
 - `docs/phase-11-offline-ux-approval-gate.md` documents the future offline/update UX states, copy strings, stale-client rules, rollback/unregister runbook, browser validation matrix, and go/no-go checklist.
-- Runtime source and production output still contain no service-worker files, service-worker registration, Cache API runtime usage, Workbox tooling, offline fallback, or active offline-support claims.
+- Phase 12 runtime behavior remains inside the approved app-shell-only service-worker gate.
+- Registration remains production-only, secure-context guarded, and scoped to `/EternalRicochet/`.
+- Deferred refresh copy remains limited to `A new version is ready. Refresh when you are ready.` and `A new version is ready after this run.`
 - `package.json` still has no runtime dependencies and keeps dev dependencies limited to Vite.
-- The app remains online-only until a later explicit service-worker implementation phase is approved.
+
+The service-worker smoke verifies:
+
+- `dist/service-worker.js` has a versioned `eternal-ricochet-app-shell-v*` cache name.
+- The precache list contains `/EternalRicochet/`, `/EternalRicochet/index.html`, hashed JS/CSS, the manifest, and both local icons.
+- The generated runtime ignores cross-origin and non-GET requests, excludes backend/provider/auth/analytics/telemetry/credential-looking paths, and has no Workbox/importScripts/runtime dependency usage.
+- The client registers `/EternalRicochet/service-worker.js` with scope `/EternalRicochet/` only in production secure contexts.
 
 The release smoke verifies:
 
@@ -80,9 +91,9 @@ The release smoke verifies:
 - The production JavaScript bundle does not expose `eternal-ricochet-debug-state`.
 - The production JavaScript bundle does not expose `__ETERNAL_RICOCHET_DEV__`.
 
-## PWA Manifest-First Smoke
+## PWA Manifest And Runtime Smoke
 
-Phase 8 adds manifest-first install metadata only:
+Phase 8 added manifest-first install metadata. Phase 12 adds the first app-shell-only service-worker runtime:
 
 ```powershell
 npm run smoke:pwa
@@ -94,13 +105,15 @@ The PWA smoke verifies:
 - `start_url`, `scope`, manifest link, and icon links use the `/EternalRicochet/` hosted path.
 - Local SVG icon assets exist for a standard icon and a maskable icon.
 - Production `dist/` output contains the manifest and icon assets after `npm run build`.
-- No service-worker registration, Cache API usage, offline fallback, push notification, background sync, backend/provider SDK, native packaging, or offline claim is introduced by the manifest surface.
+- Production `dist/` output contains the generated Phase 12 service worker while still excluding push notification, background sync, backend/provider SDK, native packaging, analytics, telemetry, and install-prompt scope.
 
-Tailwind and Google Fonts runtime CDN references were removed in Phase 9. Offline behavior remains future scope because no service worker, Cache API usage, offline fallback, or precache strategy has been added.
+Tailwind and Google Fonts runtime CDN references were removed in Phase 9. Phase 12 offline behavior is limited to the reviewed app shell and local static assets.
 
 Phase 10 adds offline-cache strategy and dry-run readiness checks only. Do not describe the release as offline-capable until a later explicit service-worker phase implements and validates first load, cached reload, offline reload, update cleanup, rollback/unregister, and hosted-path parity.
 
 Phase 11 adds an offline UX and service-worker approval gate only. It documents future copy, stale-client rules, rollback/unregister procedure, and browser validation requirements, but still does not add service-worker runtime behavior or active update UI.
+
+Phase 12 implements that approved runtime and records browser evidence in `docs/phase-12-browser-service-worker-smoke.md`. Do not claim mobile offline readiness until Safari/iOS and Android Chrome are manually validated.
 
 Optional local production preview:
 
@@ -109,6 +122,15 @@ npm run preview -- --port 4173
 ```
 
 Open `http://127.0.0.1:4173/EternalRicochet/` and confirm the menu, canvas, settings panel, and start flow still render.
+
+Then, for service-worker release readiness, use a production preview browser smoke to verify:
+
+- First online load, service-worker registration, and controlled reload.
+- App-shell cache contains exactly the hosted root, index, hashed JS/CSS, manifest, and two local icons.
+- Valid-cache offline reload renders the app shell.
+- Invalid-cache offline navigation fails cleanly, then online reload refills the app-shell cache.
+- Waiting updates show the idle prompt, defer while `gameState === "PLAYING"`, and activate only after `Refresh now`.
+- Unregister/delete rollback leaves no `eternal-ricochet-*` caches and preserves localStorage values.
 
 ## Persistence Notes
 
@@ -122,12 +144,12 @@ Storage is intentionally centralized through engine stores. UI components should
 
 ## Out Of Scope For This Release Slice
 
-Do not include these in the Phase 5 release readiness slice:
+Do not expand Phase 12 release readiness into:
 
 - Firebase, accounts, cloud saves, remote telemetry, analytics, or global leaderboards.
-- PWA service-worker caching, Cache API usage, offline fallback, install prompt UI, push notifications, background sync, or offline update behavior.
+- Backend/provider/API caching, player-data caching, localStorage migration/export, HTTP offline support claims, install prompt UI, push notifications, background sync, or update behavior outside the approved deferred-refresh prompt.
 - Capacitor, Cordova, Electron, app-store packaging, or native mobile build tooling.
 - WebGL, Pixi, shaders, or large rendering dependency migration.
 - New gameplay content, enemies, maps, weapons, upgrades, shop economy changes, or real-money systems.
 
-Future social/platform work should be planned as a separate phase with its own persistence, privacy, moderation, and deployment checks.
+After Phase 12 closes, active roadmap work stops unless the user explicitly reopens the project. Backend leaderboard work remains an unapproved candidate only.

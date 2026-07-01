@@ -13,7 +13,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 9 completion evidence is recorded in `docs/phase-9-validation-report.md`; runtime Tailwind CDN and Google Fonts references have been removed, local utility CSS now covers the app shell, and `npm run validate` guards against unapproved external app-shell URLs.
 - Phase 10 completion evidence is recorded in `docs/phase-10-validation-report.md`; the project now has an offline-cache strategy and dry-run readiness validation without registering a service worker or claiming offline support.
 - Phase 11 completion evidence is recorded in `docs/phase-11-validation-report.md`; the project now has an offline UX/service-worker approval gate, future copy/stale-client/rollback/browser validation docs, and `npm run smoke:offline-gate` before any service-worker implementation.
-- Phase 12 execution is planned in `docs/phase-12-service-worker-offline-runtime-goal-mode-execution-guide.md`; it is the first phase allowed to add production service-worker runtime, with app-shell-only caching and strict browser/rollback evidence gates.
+- Phase 12 service-worker runtime is implemented with app-shell-only production caching, production-only registration, deferred-refresh UX, rollback validation, and browser/hosted evidence in `docs/phase-12-browser-service-worker-smoke.md`.
 - Project route boundary: after Phase 12 closes, active roadmap work stops. No Phase 13, backend leaderboard, real network submission, native packaging, new gameplay, new systems, or additional platform phase should be planned unless the user explicitly reopens the project.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
@@ -71,12 +71,13 @@ git@github.com:onovich/EternalRicochet.git
 
 ## Validation
 
-- `npm run validate` runs source checks, logic smoke, production build, asset locality smoke, offline readiness dry-run, offline approval-gate smoke, release gate smoke, and PWA manifest smoke.
+- `npm run validate` runs source checks, logic smoke, production build, asset locality smoke, offline readiness smoke, service-worker smoke, offline approval-gate smoke, release gate smoke, and PWA manifest/runtime smoke.
 - `npm run smoke:assets` checks guarded runtime source and production output for unapproved external app-shell URLs, including Tailwind CDN and Google Fonts regressions.
-- `npm run smoke:offline-readiness` inspects built `dist/` cache candidates and fails on service-worker files/registration, Cache API runtime usage, Workbox tooling, unapproved external runtime URLs, or missing hosted-path assets. It is a dry-run only and does not make the app offline-capable.
-- `npm run smoke:offline-gate` checks the Phase 11 approval document for required future UX/copy/rollback/browser gates and confirms runtime source/output still does not ship service-worker or Cache API behavior.
+- `npm run smoke:offline-readiness` inspects built `dist/` cache candidates and the generated `dist/service-worker.js`, then fails on source/public service-worker files, Workbox tooling, unapproved external runtime URLs, provider/backend scope, or missing hosted-path assets.
+- `npm run smoke:service-worker` checks cache versioning, precache URLs, registration path/scope, secure-context gating, update copy, and forbidden runtime/dependency boundaries.
+- `npm run smoke:offline-gate` checks the Phase 11 approval document and confirms the Phase 12 runtime stays inside the approved app-shell-only service-worker gate.
 - `npm run smoke:release` checks production asset pathing, manifest asset emission, and verifies dev debug hooks are not exposed in the production bundle.
-- `npm run smoke:pwa` checks manifest metadata, local icon assets, hosted `/EternalRicochet/` paths, production `dist/` output, and the no-service-worker/no-offline boundary.
+- `npm run smoke:pwa` checks manifest metadata, local icon assets, hosted `/EternalRicochet/` paths, production `dist/` output, and the Phase 12 service-worker boundary.
 
 - `npm install` completed successfully with no reported vulnerabilities.<br/>**`npm install` 已成功完成，未报告漏洞。**
 - `npm run check:src` checks every JavaScript source and script file.<br/>**`npm run check:src` 会检查所有 JavaScript 源码和脚本文件。**
