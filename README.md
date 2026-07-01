@@ -14,6 +14,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 1 completion evidence is recorded in `docs/phase-1-validation-report.md`.<br/>**Phase 1 完成证据已记录在 `docs/phase-1-validation-report.md`。**
 - Phase 3 completion evidence is recorded in `docs/phase-3-validation-report.md`; local meta progression now covers credits, an upgrade shop, and three persistent upgrades.<br/>**Phase 3 完成证据记录在 `docs/phase-3-validation-report.md`；本地局外养成现在覆盖货币、升级商店和三项持久升级。**
 - Phase 4 completion evidence is recorded in `docs/phase-4-validation-report.md`; the runtime now includes dev metrics, a dev stress seed, a particle pool, render quality tiers, and lightweight Shooter projectile trail feedback.<br/>**Phase 4 完成证据记录在 `docs/phase-4-validation-report.md`；运行时现在包含开发指标、开发压力种子、粒子池、渲染质量档位和轻量 Shooter 弹体拖尾反馈。**
+- Phase 5 planning is recorded in `docs/phase-5-release-readiness-goal-mode-execution-guide.md`; the next slice targets release readiness, settings, production/dev gating, and mobile browser polish.<br/>**Phase 5 规划记录在 `docs/phase-5-release-readiness-goal-mode-execution-guide.md`；下一切片聚焦发布就绪、设置入口、生产/开发门控和移动浏览器体验加固。**
 
 ## Run Locally
 
