@@ -92,6 +92,10 @@ export function createRenderer({
   function drawProjectile(projectile) {
     if (!projectile.active) return;
 
+    if (qualityProfile.projectileTrail) {
+      drawProjectileTrail(projectile);
+    }
+
     ctx.beginPath();
     ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
     ctx.fillStyle = projectile.color;
@@ -99,6 +103,26 @@ export function createRenderer({
     ctx.shadowColor = projectile.color;
     ctx.fill();
     ctx.shadowBlur = 0;
+  }
+
+  function drawProjectileTrail(projectile) {
+    const speed = Math.hypot(projectile.vx, projectile.vy);
+    if (speed <= 0) return;
+
+    const nx = projectile.vx / speed;
+    const ny = projectile.vy / speed;
+    const length = projectile.radius * 8;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(projectile.x - nx * length, projectile.y - ny * length);
+    ctx.lineTo(projectile.x, projectile.y);
+    ctx.strokeStyle = "rgba(255, 136, 68, 0.35)";
+    ctx.lineWidth = projectile.radius * 1.2;
+    ctx.lineCap = "round";
+    ctx.shadowBlur = scaleGlow(8);
+    ctx.shadowColor = projectile.color;
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawBullet(bullet) {

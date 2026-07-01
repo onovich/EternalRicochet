@@ -470,6 +470,54 @@ function smokeRendererLowQualityGlowScale() {
   assert.ok(Math.max(...shadowBlurValues) <= 20 * GAME_CONFIG.renderQuality.tiers.low.glowScale);
 }
 
+function smokeRendererProjectileTrailQualitySwitch() {
+  const canvas = { width: 320, height: 240 };
+  const input = createStaticAimInput();
+  const player = new Player(canvas);
+  const projectile = new EnemyProjectile({ x: 80, y: 120 }, { x: 160, y: 120 }, 1);
+
+  const highCtx = createRecordingCanvasContext();
+  createRenderer({
+    canvas,
+    ctx: highCtx,
+    input,
+    config: GAME_CONFIG,
+    quality: GAME_CONFIG.renderQuality.tiers.high,
+  }).render({
+    gameState: "PLAYING",
+    player,
+    bullet: new Bullet(),
+    enemies: [],
+    obstacles: [],
+    projectiles: [projectile],
+    particles: [],
+    frameCount: 0,
+    shakeTime: 0,
+  });
+
+  const lowCtx = createRecordingCanvasContext();
+  createRenderer({
+    canvas,
+    ctx: lowCtx,
+    input,
+    config: GAME_CONFIG,
+    quality: GAME_CONFIG.renderQuality.tiers.low,
+  }).render({
+    gameState: "PLAYING",
+    player,
+    bullet: new Bullet(),
+    enemies: [],
+    obstacles: [],
+    projectiles: [projectile],
+    particles: [],
+    frameCount: 0,
+    shakeTime: 0,
+  });
+
+  assert.equal(hasProjectileTrailStroke(highCtx), true);
+  assert.equal(hasProjectileTrailStroke(lowCtx), false);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -503,11 +551,35 @@ function createRecordingCanvasContext() {
 
   return new Proxy(context, {
     set(target, name, value) {
-      if (name === "shadowBlur") calls.push({ type: "set", name, value });
+      if (name === "shadowBlur" || name === "strokeStyle") {
+        calls.push({ type: "set", name, value });
+      }
       target[name] = value;
       return true;
     },
   });
+}
+
+function createStaticAimInput() {
+  return {
+    getAimState() {
+      return {
+        isTouchDevice: false,
+        mouse: { x: 260, y: 120 },
+        leftStick: {},
+        rightStick: {},
+      };
+    },
+  };
+}
+
+function hasProjectileTrailStroke(ctx) {
+  return ctx.calls.some(
+    (call) =>
+      call.type === "set" &&
+      call.name === "strokeStyle" &&
+      call.value === "rgba(255, 136, 68, 0.35)",
+  );
 }
 
 smokeBulletFireReset();
@@ -528,6 +600,7 @@ smokePerformanceMetricsAggregation();
 smokeDevStressSeedResolution();
 smokeParticlePoolCapacityAndReset();
 smokeRendererLowQualityGlowScale();
+smokeRendererProjectileTrailQualitySwitch();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",
