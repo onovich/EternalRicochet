@@ -959,6 +959,52 @@ function smokeLocalLeaderboardProviderNoNetworkApis() {
   }
 }
 
+function smokeLeaderboardRuntimeSeparation() {
+  const leaderboardFiles = [
+    "../src/logic/leaderboard/contract.js",
+    "../src/logic/leaderboard/mockProvider.js",
+    "../src/logic/leaderboard/copy.js",
+  ];
+  const forbiddenPatterns = [
+    /from\s+["']\.\.\/engine\//,
+    /from\s+["']\.\.\/\.\.\/data\/gameConfig\.js/,
+    /\bfetch\s*\(/,
+    /\bXMLHttpRequest\b/,
+    /\bWebSocket\b/,
+    /\bEventSource\b/,
+    /\bsendBeacon\b/,
+    /\bnavigator\.serviceWorker\b/,
+    /\bfirebase\b/i,
+    /\bsupabase\b/i,
+    /\bcloudflare\b/i,
+    /\blocalStorage\./,
+    /\bsessionStorage\./,
+    /\breadHighScore\b/,
+    /\bwriteHighScore\b/,
+    /\bcreateMetaProgressionStore\b/,
+    /\bcreateSettingsStore\b/,
+  ];
+
+  for (const file of leaderboardFiles) {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    for (const pattern of forbiddenPatterns) {
+      assert.equal(pattern.test(source), false, `${file} must stay isolated from ${pattern}`);
+    }
+  }
+
+  const runtimeSources = [
+    "../src/main.js",
+    "../src/logic/engine/gameRuntime.js",
+    "../src/logic/engine/metaProgression.js",
+    "../src/logic/engine/settings.js",
+  ]
+    .map((file) => readFileSync(new URL(file, import.meta.url), "utf8"))
+    .join("\n");
+
+  assert.equal(runtimeSources.includes("logic/leaderboard"), false);
+  assert.equal(runtimeSources.includes("../leaderboard"), false);
+}
+
 function smokeLeaderboardCopyBoundary() {
   const expectedKeys = [
     LEADERBOARD_COPY_KEYS.LOCAL_ONLY,
@@ -1107,6 +1153,7 @@ smokeLocalLeaderboardProviderSuccess();
 smokeLocalLeaderboardProviderModes();
 smokeLocalLeaderboardProviderCapacityAndReset();
 smokeLocalLeaderboardProviderNoNetworkApis();
+smokeLeaderboardRuntimeSeparation();
 smokeLeaderboardCopyBoundary();
 
 console.log(
