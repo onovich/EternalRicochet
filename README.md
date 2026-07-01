@@ -12,6 +12,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 8 completion evidence is recorded in `docs/phase-8-validation-report.md`; the project now has manifest-first PWA readiness with local icons and smoke checks, while service-worker/offline behavior remains deferred.
 - Phase 9 completion evidence is recorded in `docs/phase-9-validation-report.md`; runtime Tailwind CDN and Google Fonts references have been removed, local utility CSS now covers the app shell, and `npm run validate` guards against unapproved external app-shell URLs.
 - Phase 10 completion evidence is recorded in `docs/phase-10-validation-report.md`; the project now has an offline-cache strategy and dry-run readiness validation without registering a service worker or claiming offline support.
+- Phase 11 execution is planned in `docs/phase-11-offline-ux-approval-gate-goal-mode-execution-guide.md`; it should turn offline/update UX, stale-client behavior, rollback, and browser validation into an approval gate before any service-worker implementation.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
