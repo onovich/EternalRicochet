@@ -51,13 +51,16 @@ External platform claims must be backed by primary or official sources. Date che
 | Cloud Firestore security rules | https://firebase.google.com/docs/firestore/security/get-started | 2026-07-01 | Leaderboard write/read authorization | Used as official evidence that Firestore access must be protected by security rules. |
 | Firebase App Check | https://firebase.google.com/docs/app-check | 2026-07-01 | Abuse resistance for backend resources | Used as official evidence for app-origin abuse protection planning. |
 | Firebase API keys | https://firebase.google.com/docs/projects/api-keys | 2026-07-01 | Credential/secrets boundary | Used to distinguish browser config identifiers from server/admin secrets and to require key restrictions/rules. |
-| PWA service worker | TBD | TBD | PWA install/offline lane | Fill from official browser/web platform docs. |
-| Web App Manifest | TBD | TBD | PWA install metadata | Fill from MDN/W3C or browser official docs. |
+| Service Worker API | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API | 2026-07-01 | PWA offline/cache lane | MDN reference for service workers, secure contexts, caching, lifecycle, and request interception. |
+| Web App Manifest | https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest | 2026-07-01 | PWA install metadata | MDN reference for manifest JSON, install metadata, and `<link rel="manifest">`. |
 | GitHub Pages overview | https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages | 2026-07-01 | Current static hosting baseline | Official GitHub Pages hosting model reference. |
 | GitHub Pages custom workflows | https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages | 2026-07-01 | Existing GitHub Actions deployment lane | Official reference for deploying Pages through Actions workflows. |
 | GitHub Pages custom domains | https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/about-custom-domains-and-github-pages | 2026-07-01 | Current custom-domain hosting risk | Official reference for custom domain considerations. |
-| Capacitor | TBD | TBD | Native packaging lane | Fill from Capacitor official docs. |
-| Cordova | TBD | TBD | Native packaging alternative | Fill from Cordova official docs. |
+| Capacitor install | https://capacitorjs.com/docs/getting-started | 2026-07-01 | Native packaging lane | Official reference for adding Capacitor to an existing web app, native projects, and sync. |
+| Capacitor environment setup | https://capacitorjs.com/docs/getting-started/environment-setup | 2026-07-01 | Native packaging prerequisites | Official reference for macOS/Xcode and Android Studio/SDK requirements. |
+| Cordova overview | https://cordova.apache.org/docs/en/latest/guide/overview/index.html | 2026-07-01 | Native packaging alternative | Official reference for Cordova plugins, runtime, and workflows. |
+| Cordova Android platform guide | https://cordova.apache.org/docs/en/latest/guide/platforms/android/index.html | 2026-07-01 | Android packaging prerequisites | Official reference for Android SDK/JDK/Gradle/CLI requirements. |
+| Cordova iOS platform guide | https://cordova.apache.org/docs/en/latest/guide/platforms/ios/index.html | 2026-07-01 | iOS packaging prerequisites | Official reference for macOS/Xcode/iOS SDK and App Store build requirements. |
 
 ## Current Project Baseline
 
@@ -83,6 +86,21 @@ External platform claims must be backed by primary or official sources. Date che
 - Official Firestore documentation requires access control through security rules. Project inference: public leaderboard writes must not be added until rules define who can submit, which fields are allowed, score bounds, rate limiting strategy, and read visibility.
 - Official Firebase App Check documentation positions App Check as a way to help protect backend resources from abuse by unauthorized clients. Project inference: App Check can reduce casual abuse for a browser leaderboard, but it is not a full anti-cheat or moderation solution.
 - Official Firebase API key documentation distinguishes Firebase web API keys from traditional server secrets, while still documenting key management/restriction concerns. Project inference: browser Firebase config can be public only after security rules, App Check, and key restrictions are intentionally designed; service-account/admin credentials must never be committed or shipped.
+
+### PWA / Offline Lane
+
+- MDN documents service workers as event-driven workers that sit between the app, browser, and network, can intercept requests, and can cache resources for offline behavior. Project inference: a PWA/offline lane is not just metadata; it changes the request path for every cached asset and needs rollback/update tests.
+- MDN documents service workers as available only in secure contexts, with localhost allowed for local development. Project inference: the current GitHub Pages/custom-domain production path is compatible only if HTTPS remains correctly configured.
+- MDN documents the service worker install/activate lifecycle and cache cleanup timing. Project inference: a later PWA phase needs a versioned cache policy, cache cleanup smoke, and user-facing update expectations before shipping.
+- MDN documents a web application manifest as a JSON file used by browsers for install metadata such as name and icon, and documents deploying it with `<link rel="manifest">`. Project inference: adding a manifest requires icon/splash/name decisions and should not be mixed with service-worker caching by default.
+
+### Native Packaging Lane
+
+- Official Capacitor docs say Capacitor can be added to an existing web app when it has `package.json`, a built web asset directory such as `dist` or `www`, and an `index.html` at the root of built assets. Project inference: Eternal Ricochet is structurally close to the web-asset prerequisite, but adding Capacitor would still introduce dependencies, config, native projects, and sync/build commands.
+- Official Capacitor docs require platform environment setup. For iOS, Capacitor documents macOS plus Xcode and Xcode Command Line Tools; for Android, it documents Android Studio and an Android SDK installation. Project inference: native packaging cannot be validated by the current Windows-only web validation lane alone, especially for iOS.
+- Official Cordova docs describe plugins as the bridge between Cordova and native components/device APIs, and note that plugins must be explicitly added. Project inference: a Cordova lane should be treated as a native runtime/tooling project, not a trivial static export.
+- Official Cordova docs describe cross-platform CLI and platform-centered workflows, with platform-centered work carrying overwrite/maintenance concerns. Project inference: native packaging introduces source tree ownership questions and generated native output that should not be committed casually.
+- Official Cordova Android/iOS guides document platform-specific tool requirements such as Android Studio/SDK/JDK/Gradle and macOS/Xcode/iOS SDK. Project inference: native packaging requires a hardware/OS/toolchain matrix and signing/release process before implementation.
 
 ## Lane Deep Dive: Local-Only Release / Docs
 
@@ -162,6 +180,90 @@ Validation:
 - Browser smoke with network disabled or mocked provider failure.
 - Provider rules test or emulator/manual rules verification in the future implementation phase.
 - Production build scan to ensure no server/admin secrets are bundled.
+
+## Lane Deep Dive: PWA Install / Offline
+
+Implementation shape:
+
+- Decide whether Phase 1 of PWA is manifest-only or includes service-worker caching.
+- If manifest-only, add icons, theme colors, display mode, start URL, and install smoke without offline claims.
+- If offline-capable, add a service worker with explicit cache names, versioning, update behavior, and rollback path.
+- Decide whether to vendor current external CDN assets before any offline claim.
+
+Current blockers:
+
+- `index.html` still references Tailwind and Google Fonts through external CDN/network URLs.
+- Current release smoke validates `dist` pathing but does not validate cache behavior or stale asset removal.
+- There is no icon asset set or manifest metadata approved for app installation.
+
+Privacy/data:
+
+- PWA install/offline itself need not upload player data.
+- Push notifications, background sync, or analytics must remain out of scope unless separately approved.
+
+Moderation/abuse:
+
+- No public content surface is introduced by PWA alone.
+- Offline caches can preserve outdated UI/privacy copy, so update policy matters if later network features are added.
+
+Deployment/credentials/cost:
+
+- GitHub Pages can host a static manifest and service worker, but cache scope must match `/EternalRicochet/` and the custom domain path.
+- No backend cost is introduced by install/offline alone.
+
+Rollback:
+
+- Manifest-only rollback is ordinary static rollback.
+- Service-worker rollback must unregister or replace old caches; otherwise stale clients can continue serving older files.
+
+Validation:
+
+- Build and release gate smoke.
+- Browser smoke for manifest installability signals where supported.
+- Service-worker lifecycle smoke: first load, cached reload, update, old cache cleanup, offline page behavior, and unregister/rollback.
+
+## Lane Deep Dive: Native Packaging With Capacitor/Cordova
+
+Implementation shape:
+
+- Pick one wrapper lane, or explicitly defer native packaging.
+- Treat web build as source of truth and native projects as generated/platform artifacts unless a later phase defines ownership.
+- Define app id, app name, icons, splash assets, orientation/fullscreen behavior, and store metadata.
+- Create mobile hardware QA matrix before store distribution.
+
+Current blockers:
+
+- No approved app id, signing credentials, icons, store copy, privacy labels, or support policy.
+- iOS packaging requires macOS/Xcode validation; current executor validation is web-first on Windows.
+- Current app still relies on browser/CDN behavior that may differ inside WebViews.
+
+Privacy/data:
+
+- Native packaging alone should not upload data.
+- Store privacy declarations may still be required if any network, analytics, ads, or leaderboard feature is present.
+
+Moderation/abuse:
+
+- Native packaging does not add public content, but if paired with leaderboards it inherits the same public-name and cheating risks.
+
+Deployment/credentials/cost:
+
+- Requires native toolchains and signing material outside the repository.
+- App-store release introduces review, metadata, versioning, and rollback constraints outside GitHub Pages.
+
+Rollback:
+
+- Keep the hosted web release as the fallback distribution.
+- Do not submit to stores until browser and native smoke both pass.
+- If native validation fails, abandon the native lane without altering local web gameplay.
+
+Validation:
+
+- `npm run validate` for the web source before wrapping.
+- Capacitor/Cordova sync/build smoke on approved host OS/toolchain.
+- Android emulator/device smoke.
+- iOS simulator/device smoke on macOS if iOS is in scope.
+- Store packaging dry run only after signing and metadata are approved.
 
 ## No-Go Until Decided
 
