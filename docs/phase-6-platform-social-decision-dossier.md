@@ -51,6 +51,7 @@ External platform claims must be backed by primary or official sources. Date che
 | Cloud Firestore security rules | https://firebase.google.com/docs/firestore/security/get-started | 2026-07-01 | Leaderboard write/read authorization | Used as official evidence that Firestore access must be protected by security rules. |
 | Firebase App Check | https://firebase.google.com/docs/app-check | 2026-07-01 | Abuse resistance for backend resources | Used as official evidence for app-origin abuse protection planning. |
 | Firebase API keys | https://firebase.google.com/docs/projects/api-keys | 2026-07-01 | Credential/secrets boundary | Used to distinguish browser config identifiers from server/admin secrets and to require key restrictions/rules. |
+| Firebase privacy and security | https://firebase.google.com/support/privacy | 2026-07-01 | Privacy/data boundary planning | Official Firebase privacy/security reference; not a substitute for legal review. |
 | Service Worker API | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API | 2026-07-01 | PWA offline/cache lane | MDN reference for service workers, secure contexts, caching, lifecycle, and request interception. |
 | Web App Manifest | https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest | 2026-07-01 | PWA install metadata | MDN reference for manifest JSON, install metadata, and `<link rel="manifest">`. |
 | GitHub Pages overview | https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages | 2026-07-01 | Current static hosting baseline | Official GitHub Pages hosting model reference. |
@@ -180,6 +181,83 @@ Validation:
 - Browser smoke with network disabled or mocked provider failure.
 - Provider rules test or emulator/manual rules verification in the future implementation phase.
 - Production build scan to ensure no server/admin secrets are bundled.
+
+## Privacy, Consent, And Data Boundary
+
+This section defines a future leaderboard boundary. It is a product/engineering plan, not legal advice. A later implementation phase must still get user-approved privacy copy and any required legal review before network submission ships.
+
+### Allowed Future Leaderboard Submission Fields
+
+Submit only the smallest run result needed for a public leaderboard:
+
+| Field | Purpose | Public? | Notes |
+| --- | --- | --- | --- |
+| `score` | Rank the completed run. | Yes | Integer from run settlement; reject negative, non-finite, and impossible values. |
+| `displayName` or `anonymousId` | Show or group the entrant. | Display name yes; anonymous id no | Display name requires consent, length limit, profanity/moderation path, and optional anonymous default. |
+| `submittedAt` | Sort/tiebreak and audit submissions. | Maybe | Prefer server timestamp where the provider supports it; client timestamp is advisory only. |
+| `gameVersion` / `buildId` | Separate score eras after balance changes. | Maybe | Required before leaderboard launch because upgrades/balance can change score comparability. |
+| `qualityTier` | Debug rendering/performance context. | No by default | Only include if needed for abuse/support, and disclose it. |
+| `runDurationFrames` or `runDurationMs` | Basic anti-abuse sanity check. | No | Keep bounded and avoid detailed telemetry. |
+| `clientNonce` | Duplicate submission defense. | No | Random per-run token; not a tracking id across sessions. |
+| `appCheckToken` or provider attestation | Backend abuse resistance. | No | Provider-specific; disclose if it sends attestation material. |
+
+### Do Not Submit Without Explicit Approval
+
+The following must remain local-only unless a later user-approved phase names and justifies them:
+
+- Full `localStorage` dumps.
+- Upgrade inventory, credit balance, shop purchase history, or meta progression beyond a narrow score-era/version context.
+- Settings such as audio/fullscreen/render preference unless needed for a disclosed support reason.
+- Raw pointer/touch/key input history.
+- Device identifiers, fingerprinting signals, hardware model, installed fonts, or persistent browser identifiers.
+- IP-derived location claims stored in the game database.
+- Analytics, telemetry, session replay, crash reporting, or performance monitoring.
+- Personal data beyond the approved display name or intentionally anonymous id.
+- Any Firebase Authentication account data unless accounts are separately approved.
+
+### Consent And UI Requirements Before Submission
+
+A future networked leaderboard phase must add all of these before the first write:
+
+- A submit screen that clearly says scores will be sent to an external backend and may be publicly shown.
+- A display-name field with anonymous play still available.
+- A consent checkbox or equivalent explicit action for first submission.
+- A link or modal with privacy copy: fields submitted, why, public visibility, retention expectation, deletion/removal path, and provider name.
+- A moderation notice for names and suspicious scores.
+- A network failure state that keeps local high score/meta progression intact.
+- A local opt-out path that hides submission prompts.
+
+### Moderation And Abuse Risks
+
+| Risk | Example | Required Mitigation Before Launch |
+| --- | --- | --- |
+| Offensive display names | Slurs, threats, impersonation, links | Name length/character limits, filter or review queue, takedown path. |
+| Forged scores | Modified client writes impossible values | Security rules, schema validation, score bounds, server timestamp, versioned eras, suspicious-score review. |
+| Spam submissions | Repeated writes to inflate or flood leaderboard | Rate limits, per-run nonce, App Check, per-anonymous-id throttles where possible. |
+| Backend quota abuse | Automated reads/writes exhaust free tier or billable quota | Conservative query shape, pagination/limit, App Check, budget alerts, launch cap. |
+| Privacy surprise | User expects local-only play but score/name is uploaded | Explicit consent UI, no default upload, local-only fallback. |
+| Moderation operations gap | User asks for name/score removal | Document owner, contact path, removal tooling, audit log. |
+
+### Storage Boundary With Existing Local Data
+
+Current local stores must remain separate:
+
+- `eternalRicochetSettings`: render quality, audio mute, fullscreen preference.
+- `eternalRicochetMeta`: credits and upgrades.
+- `eternalRicochetHighScore`: local high score.
+
+A future leaderboard client may read the completed run score and version/build metadata, but it must not upload these storage blobs directly. The leaderboard store must be its own backend collection/table with a narrow schema and must not become the source of truth for local upgrades or settings.
+
+### Deletion, Retention, And Policy Open Questions
+
+These must be answered before implementation:
+
+- How can a user request display-name or score removal?
+- Is a public score retained indefinitely, or expired after balance/version resets?
+- Does the project need a contact email or moderation form before public release?
+- Who can remove abusive entries, and where are moderation credentials stored?
+- Is anonymous id resettable by the player?
+- Does the chosen provider process IP/user-agent/attestation data, and how is that reflected in privacy copy?
 
 ## Lane Deep Dive: PWA Install / Offline
 
