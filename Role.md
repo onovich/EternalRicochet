@@ -23,11 +23,11 @@ idempotency:
   last_planner_dispatch_status: sent
   last_planner_dispatch_guide: docs/phase-12-service-worker-offline-runtime-goal-mode-execution-guide.md
   last_planner_dispatch_commit: 8d3ae8f
-  last_executor_report_commit: 9090c85
+  last_executor_report_commit: 8d0c439
   last_executor_report_status: READY_FOR_CHECK
-  last_executor_report_at: 2026-07-01T23:08:32.8017195+08:00
-  last_executor_report_guide: docs/phase-11-validation-report.md
-  last_check_status: pass
+  last_executor_report_at: 2026-07-02T03:10:03.9014646+08:00
+  last_executor_report_guide: docs/phase-12-validation-report.md
+  last_check_status: pending_phase_12_check
 
 route_constraints:
   user_boundary_updated_at: 2026-07-02T02:59:25.5237040+08:00
