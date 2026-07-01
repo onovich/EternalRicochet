@@ -2,7 +2,7 @@
 
 workspace: D:\WebProjects\EternalRicochet
 created_at: 2026-07-01T16:46:09.9493994+08:00
-updated_at: 2026-07-01T16:52:23.7267022+08:00
+updated_at: 2026-07-01T16:54:36.6848034+08:00
 
 planner:
   role: architect
@@ -19,4 +19,7 @@ executor:
 idempotency:
   active_goal_guide: docs/maintenance-physics-p1-goal-mode-execution-guide.md
   active_goal_phase: Phase 1 - Maintainable Core And Ricochet Feel
-  last_planner_dispatch_status: pending
+  last_planner_dispatch: 2026-07-01T16:54:36.6848034+08:00
+  last_planner_dispatch_status: sent
+  last_planner_dispatch_guide: docs/maintenance-physics-p1-goal-mode-execution-guide.md
+  last_planner_dispatch_commit: b25963b
