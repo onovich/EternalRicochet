@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const rootDir = process.cwd();
@@ -76,6 +76,9 @@ assert.equal(distIndex.includes("/EternalRicochet/icons/icon.svg"), true);
 for (const text of [sourceIndex, JSON.stringify(manifest)]) {
   assertNoDeferredPwaScope(text);
 }
+assertManifestHasNoDeferredCapabilities(manifest);
+assertPackageHasNoPlatformDeps();
+assertRuntimeHasNoPlatformScope();
 
 console.log("PWA smoke passed: manifest metadata, icon assets, hosted paths, and no-service-worker boundary are intact.");
 
@@ -102,4 +105,72 @@ function assertNoDeferredPwaScope(text) {
   for (const token of forbiddenTokens) {
     assert.equal(text.includes(token), false, `manifest surface must not include ${token}`);
   }
+}
+
+function assertManifestHasNoDeferredCapabilities(candidate) {
+  const forbiddenManifestFields = [
+    "prefer_related_applications",
+    "related_applications",
+    "shortcuts",
+    "share_target",
+    "protocol_handlers",
+    "file_handlers",
+    "launch_handler",
+  ];
+
+  for (const field of forbiddenManifestFields) {
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(candidate, field),
+      false,
+      `manifest must not declare deferred capability ${field}`,
+    );
+  }
+}
+
+function assertPackageHasNoPlatformDeps() {
+  const packageJson = readJson(join(rootDir, "package.json"));
+  assert.equal(packageJson.dependencies, undefined, "Phase 8 must not add runtime dependencies");
+  assert.deepEqual(
+    Object.keys(packageJson.devDependencies ?? {}),
+    ["vite"],
+    "Phase 8 must not add platform/native/backend dev dependencies",
+  );
+}
+
+function assertRuntimeHasNoPlatformScope() {
+  const runtimeFiles = [
+    sourceIndexPath,
+    ...collectFiles(join(rootDir, "src")).filter((file) => file.endsWith(".js")),
+  ];
+  const forbiddenPatterns = [
+    /\bnavigator\.serviceWorker\b/,
+    /\bserviceWorker\.register\b/,
+    /\bcaches\./,
+    /\bCacheStorage\b/,
+    /\bBackgroundSync\b/,
+    /\bPushManager\b/,
+    /\bNotification\.requestPermission\b/,
+    /from\s+["']firebase/,
+    /from\s+["']@firebase/,
+    /from\s+["']@supabase/,
+    /from\s+["']@capacitor/,
+    /from\s+["']cordova/,
+    /from\s+["']electron/,
+    /\bFirebaseApp\b/,
+    /\bcreateClient\s*\(/,
+  ];
+
+  for (const file of runtimeFiles) {
+    const source = readFileSync(file, "utf8");
+    for (const pattern of forbiddenPatterns) {
+      assert.equal(pattern.test(source), false, `${file} must not include ${pattern}`);
+    }
+  }
+}
+
+function collectFiles(dir) {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry);
+    return statSync(path).isDirectory() ? collectFiles(path) : [path];
+  });
 }
