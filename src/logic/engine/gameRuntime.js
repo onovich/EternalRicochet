@@ -95,7 +95,11 @@ export function createGameRuntime({
     getBulletActive: () => bullet.active,
     windowRef,
   });
-  const audio = createAudioSystem({ getGameState, windowRef });
+  const audio = createAudioSystem({
+    getGameState,
+    getMuted: () => settingsStore.getState().audioMuted,
+    windowRef,
+  });
   const hud = createHud(documentRef);
   const renderer = createRenderer({ canvas, ctx, input, config, quality: renderQuality.profile });
   const metaStore = createMetaProgressionStore({
@@ -474,6 +478,9 @@ export function createGameRuntime({
       combo: combo.getHudState(),
       meta: metaStore.getState(),
       settings: settingsStore.getState(),
+      audio: {
+        muted: audio.isMuted(),
+      },
       settlement: lastSettlement,
       performance: performanceMetrics.getState(),
       renderQuality,

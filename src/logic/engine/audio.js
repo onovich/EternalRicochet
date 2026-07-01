@@ -1,4 +1,8 @@
-export function createAudioSystem({ getGameState, windowRef = window }) {
+export function createAudioSystem({
+  getGameState,
+  getMuted = () => false,
+  windowRef = window,
+}) {
   const AudioContextCtor = windowRef.AudioContext || windowRef.webkitAudioContext;
   let audioCtx;
 
@@ -13,7 +17,7 @@ export function createAudioSystem({ getGameState, windowRef = window }) {
   }
 
   function playTone(freq, type, duration, vol, slideFreq = null) {
-    if (!audioCtx || getGameState() === "MENU") return;
+    if (!audioCtx || getMuted() || getGameState() === "MENU") return;
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -35,6 +39,7 @@ export function createAudioSystem({ getGameState, windowRef = window }) {
 
   return {
     init,
+    isMuted: () => Boolean(getMuted()),
     sfx: {
       shoot: () => playTone(800, "square", 0.15, 0.1, 150),
       bounce: () => playTone(1200, "sine", 0.05, 0.05),
@@ -46,4 +51,3 @@ export function createAudioSystem({ getGameState, windowRef = window }) {
     },
   };
 }
-

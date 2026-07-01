@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { GAME_CONFIG } from "../src/data/gameConfig.js";
+import { createAudioSystem } from "../src/logic/engine/audio.js";
 import {
   resolveBulletEnemyCollision,
   resolveBulletObstacleCollision,
@@ -585,6 +586,64 @@ function smokeSettingsPersistence() {
   });
 }
 
+function smokeAudioMutePreference() {
+  const audioCalls = [];
+  const windowRef = {
+    AudioContext: class FakeAudioContext {
+      constructor() {
+        this.state = "running";
+        this.currentTime = 0;
+        this.destination = {};
+      }
+
+      resume() {
+        audioCalls.push("resume");
+      }
+
+      createOscillator() {
+        audioCalls.push("oscillator");
+        return {
+          type: "sine",
+          frequency: {
+            setValueAtTime() {},
+            exponentialRampToValueAtTime() {},
+          },
+          connect() {},
+          start() {},
+          stop() {},
+        };
+      }
+
+      createGain() {
+        audioCalls.push("gain");
+        return {
+          connect() {},
+          gain: {
+            setValueAtTime() {},
+            exponentialRampToValueAtTime() {},
+          },
+        };
+      }
+    },
+  };
+  let muted = true;
+  const audio = createAudioSystem({
+    getGameState: () => "PLAYING",
+    getMuted: () => muted,
+    windowRef,
+  });
+
+  audio.init();
+  audio.sfx.shoot();
+  assert.equal(audio.isMuted(), true);
+  assert.equal(audioCalls.includes("oscillator"), false);
+
+  muted = false;
+  audio.sfx.shoot();
+  assert.equal(audio.isMuted(), false);
+  assert.equal(audioCalls.includes("oscillator"), true);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -669,6 +728,7 @@ smokeParticlePoolCapacityAndReset();
 smokeRendererLowQualityGlowScale();
 smokeRendererProjectileTrailQualitySwitch();
 smokeSettingsPersistence();
+smokeAudioMutePreference();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",
