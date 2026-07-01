@@ -8,7 +8,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 
 - Phase 5 completion evidence is recorded in `docs/phase-5-validation-report.md`; the runtime now includes a local settings panel, saved render quality/audio/fullscreen preferences, mobile safe-area polish, and release gate smoke checks.
 - Phase 6 completion evidence is recorded in `docs/phase-6-validation-report.md`; the project now has a decision-ready platform/social dossier for local-only, backend leaderboard, PWA, and native packaging lanes, with user approval gates before any integration.
-- Phase 7 planning is recorded in `docs/phase-7-local-leaderboard-contract-goal-mode-execution-guide.md`; the next slice is limited to a local-only leaderboard contract prototype with mocked provider behavior and no backend/network integration.
+- Phase 7 completion evidence is recorded in `docs/phase-7-validation-report.md`; the project now has a local-only leaderboard contract prototype with pure helpers, mocked provider behavior, consent/failure copy, smoke coverage, and no backend/network integration.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
@@ -70,6 +70,6 @@ git@github.com:onovich/EternalRicochet.git
 
 - `npm install` completed successfully with no reported vulnerabilities.<br/>**`npm install` 已成功完成，未报告漏洞。**
 - `npm run check:src` checks every JavaScript source and script file.<br/>**`npm run check:src` 会检查所有 JavaScript 源码和脚本文件。**
-- `npm run smoke:logic` covers bullet fire reset, wall rebound, enemy rebound, combo, obstacles, Shooter projectiles, meta progression, performance metrics, render quality, and particle pooling.<br/>**`npm run smoke:logic` 覆盖子弹发射重置、墙面反弹、敌人反弹、连击、障碍物、Shooter 弹体、局外养成、性能指标、渲染质量和粒子池。**
+- `npm run smoke:logic` covers bullet fire reset, wall rebound, enemy rebound, combo, obstacles, Shooter projectiles, meta progression, performance metrics, render quality, particle pooling, local leaderboard contract validation, mocked provider states, consent copy, and boundary guards.<br/>**`npm run smoke:logic` 覆盖子弹发射重置、墙面反弹、敌人反弹、连击、障碍物、Shooter 弹体、局外养成、性能指标、渲染质量、粒子池、本地排行榜合约验证、模拟 provider 状态、同意文案和边界护栏。**
 - `npm run build` completed successfully and generated `dist/index.html` plus bundled assets.<br/>**`npm run build` 已成功完成，并生成 `dist/index.html` 及打包资源。**
 - Browser smoke testing confirmed menu/start, HUD, canvas rendering, click shooting, recall/collect, upgrade shop open/close, low-quality stress metrics, particle cap behavior, and no page console errors on the local dev server.<br/>**浏览器 smoke 测试确认了菜单启动、HUD、Canvas 渲染、点击射击、召回/拾取、升级商店打开关闭、低质量压力指标、粒子上限行为，以及本地开发服务器页面控制台无错误。**
