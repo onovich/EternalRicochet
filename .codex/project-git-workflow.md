@@ -46,6 +46,7 @@ powershell
 npm run check:src
 npm run smoke:logic
 npm run build
+npm run smoke:release
 ```
 ## Staging Policy
 

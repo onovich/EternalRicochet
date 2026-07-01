@@ -6,7 +6,8 @@
     "repoRoot":  "D:\\WebProjects\\EternalRicochet",
     "validateSequence":  [
                              "structureCheck",
-                             "build"
+                             "build",
+                             "releaseDryRun"
                          ],
     "operations":  {
                        "envCheck":  {
@@ -81,7 +82,7 @@
                                    },
                        "releaseDryRun":  {
                                              "commands":  [
-
+                                                              "npm run smoke:release"
                                                           ]
                                          }
                    },

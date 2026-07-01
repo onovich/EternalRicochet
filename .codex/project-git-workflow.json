@@ -9,7 +9,8 @@
     "validationCommands":  [
                                "npm run check:src",
                                "npm run smoke:logic",
-                               "npm run build"
+                               "npm run build",
+                               "npm run smoke:release"
                            ],
     "stagingPolicy":  "ask each time",
     "commitCommand":  "",

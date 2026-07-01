@@ -36,7 +36,7 @@ C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\ReleaseDry
 
 ## Validate Sequence
 
-structureCheck, build
+structureCheck, build, releaseDryRun
 
 ## Dev Server
 
@@ -44,6 +44,10 @@ Start command: `npm run dev -- --port 4173`
 Health URL: `http://127.0.0.1:4173/EternalRicochet/`
 Ready text: `Eternal Ricochet`
 Timeout seconds: 30
+
+## Release Gate
+
+After `npm run build`, run `npm run smoke:release` to verify production asset pathing and dev debug gates.
 
 ## Safety Policy
 
