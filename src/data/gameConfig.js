@@ -42,6 +42,36 @@ export const GAME_CONFIG = Object.freeze({
     multiplierStep: 1,
     visibleKillCount: 2,
   },
+  metaProgression: {
+    storageKey: "eternalRicochetMeta",
+    schemaVersion: 1,
+    creditsPerScore: 25,
+    maxCredits: 999999,
+    upgrades: {
+      gravityRecall: {
+        label: "Gravity Recall",
+        maxLevel: 3,
+        baseCost: 8,
+        costStep: 8,
+        recallForcePerLevel: 0.35,
+      },
+      armorPiercer: {
+        label: "Armor Piercer",
+        maxLevel: 3,
+        baseCost: 10,
+        costStep: 10,
+        killDampingBonusPerLevel: 0.05,
+        maxKillDamping: 0.95,
+      },
+      energyShield: {
+        label: "Energy Shield",
+        maxLevel: 3,
+        baseCost: 12,
+        costStep: 14,
+        hpPerLevel: 1,
+      },
+    },
+  },
   obstacles: {
     count: 3,
     radius: 34,

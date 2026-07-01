@@ -10,6 +10,15 @@ import {
 } from "../src/logic/engine/collisions.js";
 import { Bullet, Enemy, EnemyProjectile, Player } from "../src/logic/engine/entities.js";
 import { createObstacleLayout, isPointSafeFromObstacles } from "../src/logic/engine/level.js";
+import {
+  awardCredits,
+  calculateCreditsEarned,
+  createDefaultMetaState,
+  createMetaProgressionStore,
+  purchaseUpgrade,
+  readMetaState,
+  sanitizeMetaState,
+} from "../src/logic/engine/metaProgression.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
 
@@ -173,11 +182,98 @@ function smokeShooterProjectileLifecycle() {
   assert.equal(player.hp, GAME_CONFIG.player.hp - 1);
 }
 
+function smokeMetaProgressionPersistence() {
+  const storage = createMemoryStorage();
+  assert.deepEqual(readMetaState(storage), createDefaultMetaState());
+
+  storage.setItem(GAME_CONFIG.metaProgression.storageKey, "{bad json");
+  assert.deepEqual(readMetaState(storage), createDefaultMetaState());
+
+  const sanitized = sanitizeMetaState({
+    credits: -20,
+    totalCreditsEarned: 2000000,
+    upgrades: {
+      gravityRecall: 99,
+      armorPiercer: 2.8,
+      energyShield: -1,
+      unknown: 99,
+    },
+  });
+
+  assert.equal(sanitized.credits, 0);
+  assert.equal(sanitized.totalCreditsEarned, GAME_CONFIG.metaProgression.maxCredits);
+  assert.equal(sanitized.upgrades.gravityRecall, GAME_CONFIG.metaProgression.upgrades.gravityRecall.maxLevel);
+  assert.equal(sanitized.upgrades.armorPiercer, 2);
+  assert.equal(sanitized.upgrades.energyShield, 0);
+  assert.equal(sanitized.upgrades.unknown, undefined);
+}
+
+function smokeMetaProgressionEconomy() {
+  assert.equal(calculateCreditsEarned(124), 4);
+  assert.equal(calculateCreditsEarned(-1), 0);
+
+  const awarded = awardCredits(createDefaultMetaState(), 250);
+  assert.equal(awarded.earned, 10);
+  assert.equal(awarded.state.credits, 10);
+  assert.equal(awarded.state.totalCreditsEarned, 10);
+
+  const firstPurchase = purchaseUpgrade(awarded.state, "gravityRecall");
+  assert.equal(firstPurchase.purchased, true);
+  assert.equal(firstPurchase.cost, GAME_CONFIG.metaProgression.upgrades.gravityRecall.baseCost);
+  assert.equal(firstPurchase.state.credits, 2);
+  assert.equal(firstPurchase.state.upgrades.gravityRecall, 1);
+
+  const tooExpensive = purchaseUpgrade(firstPurchase.state, "armorPiercer");
+  assert.equal(tooExpensive.purchased, false);
+  assert.equal(tooExpensive.reason, "insufficient-credits");
+
+  const maxedState = sanitizeMetaState({
+    credits: 999,
+    upgrades: { energyShield: GAME_CONFIG.metaProgression.upgrades.energyShield.maxLevel },
+  });
+  const maxedPurchase = purchaseUpgrade(maxedState, "energyShield");
+  assert.equal(maxedPurchase.purchased, false);
+  assert.equal(maxedPurchase.reason, "max-level");
+}
+
+function smokeMetaProgressionStore() {
+  const storage = createMemoryStorage();
+  const store = createMetaProgressionStore({ storage });
+  const award = store.awardScore(250);
+  assert.equal(award.saved, true);
+  assert.equal(award.earned, 10);
+
+  const purchase = store.purchase("gravityRecall");
+  assert.equal(purchase.purchased, true);
+  assert.equal(purchase.saved, true);
+
+  const reloaded = createMetaProgressionStore({ storage }).getState();
+  assert.equal(reloaded.credits, 2);
+  assert.equal(reloaded.upgrades.gravityRecall, 1);
+}
+
+function createMemoryStorage() {
+  const values = new Map();
+  return {
+    getItem(key) {
+      return values.has(key) ? values.get(key) : null;
+    },
+    setItem(key, value) {
+      values.set(key, String(value));
+    },
+  };
+}
+
 smokeBulletFireReset();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeComboScoring();
 smokeObstacleLayoutAndBounce();
 smokeShooterProjectileLifecycle();
+smokeMetaProgressionPersistence();
+smokeMetaProgressionEconomy();
+smokeMetaProgressionStore();
 
-console.log("Core smoke passed: phase 1 regressions, combo, obstacles, shooter projectile lifecycle.");
+console.log(
+  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter projectile lifecycle, meta progression persistence.",
+);
