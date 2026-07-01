@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
+    "check:src": "node scripts/check-src.mjs",
+    "smoke:logic": "node scripts/smoke-core.mjs",
+    "validate": "npm run check:src && npm run smoke:logic && npm run build",
     "preview": "vite preview --host 127.0.0.1"
   },
   "devDependencies": {

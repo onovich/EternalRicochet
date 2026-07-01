@@ -7,7 +7,8 @@
     "safeDirectory":  "D:/WebProjects/EternalRicochet",
     "statusCommand":  "git -c safe.directory=D:/WebProjects/EternalRicochet status --short --branch",
     "validationCommands":  [
-                               "node --check src/logic/engine/legacyGame.js",
+                               "npm run check:src",
+                               "npm run smoke:logic",
                                "npm run build"
                            ],
     "stagingPolicy":  "ask each time",

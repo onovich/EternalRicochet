@@ -43,7 +43,8 @@ Run these before commit or push, in order:
 
 ```
 powershell
-node --check src/logic/engine/legacyGame.js
+npm run check:src
+npm run smoke:logic
 npm run build
 ```
 ## Staging Policy

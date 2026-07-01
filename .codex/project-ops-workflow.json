@@ -52,7 +52,8 @@
                                      },
                        "structureCheck":  {
                                               "commands":  [
-                                                               "node --check src/logic/engine/legacyGame.js"
+                                                               "npm run check:src",
+                                                               "npm run smoke:logic"
                                                            ]
                                           },
                        "codegen":  {

@@ -1,0 +1,46 @@
+export function createHud(documentRef = document) {
+  const uiLayer = documentRef.getElementById("ui-layer");
+  const hud = documentRef.getElementById("hud");
+  const mainMenu = documentRef.getElementById("main-menu");
+  const gameOverMenu = documentRef.getElementById("game-over-menu");
+  const finalScore = documentRef.getElementById("final-score");
+  const highScore = documentRef.getElementById("high-score");
+  const healthBar = documentRef.getElementById("health-bar");
+  const ammoDisplay = documentRef.getElementById("ammo-display");
+  const score = documentRef.getElementById("score");
+  const scoreContainer = documentRef.getElementById("score-container");
+
+  function showPlaying() {
+    uiLayer.classList.add("hidden");
+    hud.classList.remove("hidden");
+    mainMenu.classList.add("hidden");
+    gameOverMenu.classList.add("hidden");
+  }
+
+  function showGameOver({ scoreValue, highScoreValue }) {
+    uiLayer.classList.remove("hidden");
+    gameOverMenu.classList.remove("hidden");
+    finalScore.innerText = scoreValue;
+    highScore.innerText = highScoreValue;
+    hud.classList.add("hidden");
+  }
+
+  function update({ hp, maxHp, bulletActive, scoreValue }) {
+    healthBar.innerHTML = Array.from({ length: maxHp }, (_, index) => {
+      const className = index < hp ? "" : ' class="text-gray-700"';
+      return `<span${className}>\u2665</span>`;
+    }).join("");
+    ammoDisplay.innerText = bulletActive ? "0" : "1";
+    score.innerText = scoreValue;
+  }
+
+  function pulseScore() {
+    scoreContainer.style.transform = "scale(1.3)";
+    setTimeout(() => {
+      scoreContainer.style.transform = "scale(1)";
+    }, 100);
+  }
+
+  return { showPlaying, showGameOver, update, pulseScore };
+}
+
