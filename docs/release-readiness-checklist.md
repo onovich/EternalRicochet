@@ -18,6 +18,7 @@ This runs:
 - `npm run build`
 - `npm run smoke:assets`
 - `npm run smoke:offline-readiness`
+- `npm run smoke:offline-gate`
 - `npm run smoke:release`
 - `npm run smoke:pwa`
 
@@ -44,6 +45,7 @@ Create a fresh production build:
 npm run build
 npm run smoke:assets
 npm run smoke:offline-readiness
+npm run smoke:offline-gate
 npm run smoke:release
 ```
 
@@ -60,6 +62,13 @@ The offline-readiness dry-run verifies:
 - The production manifest keeps `id`, `start_url`, and `scope` at `/EternalRicochet/`.
 - Source and production output contain no service-worker files, service-worker registration, Cache API runtime usage, Workbox tooling, unapproved external runtime URLs, or offline-support claims.
 - This check is a dry-run only. It does not register a service worker, populate browser caches, or prove offline reload behavior.
+
+The offline approval-gate smoke verifies:
+
+- `docs/phase-11-offline-ux-approval-gate.md` documents the future offline/update UX states, copy strings, stale-client rules, rollback/unregister runbook, browser validation matrix, and go/no-go checklist.
+- Runtime source and production output still contain no service-worker files, service-worker registration, Cache API runtime usage, Workbox tooling, offline fallback, or active offline-support claims.
+- `package.json` still has no runtime dependencies and keeps dev dependencies limited to Vite.
+- The app remains online-only until a later explicit service-worker implementation phase is approved.
 
 The release smoke verifies:
 
@@ -90,6 +99,8 @@ The PWA smoke verifies:
 Tailwind and Google Fonts runtime CDN references were removed in Phase 9. Offline behavior remains future scope because no service worker, Cache API usage, offline fallback, or precache strategy has been added.
 
 Phase 10 adds offline-cache strategy and dry-run readiness checks only. Do not describe the release as offline-capable until a later explicit service-worker phase implements and validates first load, cached reload, offline reload, update cleanup, rollback/unregister, and hosted-path parity.
+
+Phase 11 adds an offline UX and service-worker approval gate only. It documents future copy, stale-client rules, rollback/unregister procedure, and browser validation requirements, but still does not add service-worker runtime behavior or active update UI.
 
 Optional local production preview:
 

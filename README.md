@@ -12,7 +12,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 8 completion evidence is recorded in `docs/phase-8-validation-report.md`; the project now has manifest-first PWA readiness with local icons and smoke checks, while service-worker/offline behavior remains deferred.
 - Phase 9 completion evidence is recorded in `docs/phase-9-validation-report.md`; runtime Tailwind CDN and Google Fonts references have been removed, local utility CSS now covers the app shell, and `npm run validate` guards against unapproved external app-shell URLs.
 - Phase 10 completion evidence is recorded in `docs/phase-10-validation-report.md`; the project now has an offline-cache strategy and dry-run readiness validation without registering a service worker or claiming offline support.
-- Phase 11 execution is planned in `docs/phase-11-offline-ux-approval-gate-goal-mode-execution-guide.md`; it should turn offline/update UX, stale-client behavior, rollback, and browser validation into an approval gate before any service-worker implementation.
+- Phase 11 approval-gate documentation is recorded in `docs/phase-11-offline-ux-approval-gate.md`; it defines future offline/update UX copy, stale-client behavior, rollback/unregister steps, browser validation gates, and `npm run smoke:offline-gate` before any service-worker implementation.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
@@ -69,9 +69,10 @@ git@github.com:onovich/EternalRicochet.git
 
 ## Validation
 
-- `npm run validate` runs source checks, logic smoke, production build, asset locality smoke, release gate smoke, and PWA manifest smoke.
+- `npm run validate` runs source checks, logic smoke, production build, asset locality smoke, offline readiness dry-run, offline approval-gate smoke, release gate smoke, and PWA manifest smoke.
 - `npm run smoke:assets` checks guarded runtime source and production output for unapproved external app-shell URLs, including Tailwind CDN and Google Fonts regressions.
 - `npm run smoke:offline-readiness` inspects built `dist/` cache candidates and fails on service-worker files/registration, Cache API runtime usage, Workbox tooling, unapproved external runtime URLs, or missing hosted-path assets. It is a dry-run only and does not make the app offline-capable.
+- `npm run smoke:offline-gate` checks the Phase 11 approval document for required future UX/copy/rollback/browser gates and confirms runtime source/output still does not ship service-worker or Cache API behavior.
 - `npm run smoke:release` checks production asset pathing, manifest asset emission, and verifies dev debug hooks are not exposed in the production bundle.
 - `npm run smoke:pwa` checks manifest metadata, local icon assets, hosted `/EternalRicochet/` paths, production `dist/` output, and the no-service-worker/no-offline boundary.
 
