@@ -16,12 +16,21 @@ Goal: implement the first real offline-capable PWA runtime for Eternal Ricochet 
 
 You must validate and push each completed round before moving to the next round. If any required service-worker browser evidence cannot be produced, stop and report BLOCKED instead of claiming PASS.
 
+User route boundary update, 2026-07-02:
+
+- After Phase 12 completes, active Eternal Ricochet roadmap work stops.
+- Do not propose, plan, dispatch, or start Phase 13 from this phase.
+- Keep Phase 12 limited to closing the current PWA/service-worker app-shell offline cache loop: browser/service-worker evidence, reports, docs sync, validation, commit, push, and READY_FOR_CHECK.
+- Backend leaderboard work is not approved. Treat backend/provider/network leaderboard material only as an unapproved candidate or forbidden-scope boundary.
+- Phase 12 may cache only the static app shell and local build/manifest/icon assets. It must not cache player data, localStorage values, backend/provider responses, credentials, analytics, telemetry, or future leaderboard/network payloads.
+
 ## 1. 必读上下文
 
 - `docs/phase-11-planner-check-report.md`
 - `docs/phase-11-offline-ux-approval-gate.md`
 - `docs/phase-11-validation-report.md`
 - `docs/phase-10-offline-cache-strategy.md`
+- `docs/post-phase-12-project-freeze.md`
 - `docs/release-readiness-checklist.md`
 - `README.md`
 - `package.json`
@@ -219,6 +228,7 @@ Round 15:
 
 Round 16:
 - Final report, commit, push, and READY_FOR_CHECK back to planner.
+- Do not recommend Phase 13 or any new roadmap phase. State that Phase 12 is the stopping point unless the user explicitly reopens the project later.
 
 ## 7. PASS 标准
 
@@ -274,4 +284,7 @@ Remaining risks:
 
 Non-scope confirmation:
 - No Workbox, runtime dependencies, backend/provider caching, analytics/telemetry, credentials, push, background sync, native packaging, gameplay, economy, rendering, audio, meta-progression, or unrelated feature changes added.
+
+Post-phase boundary:
+- Phase 12 is the stopping point. Do not ask planner to create Phase 13 unless the user explicitly reopens the project later.
 ```
