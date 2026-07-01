@@ -66,8 +66,9 @@ git@github.com:onovich/EternalRicochet.git
 
 ## Validation
 
-- `npm run validate` runs source checks, logic smoke, production build, and release gate smoke.
-- `npm run smoke:release` checks production asset pathing and verifies dev debug hooks are not exposed in the production bundle.
+- `npm run validate` runs source checks, logic smoke, production build, release gate smoke, and PWA manifest smoke.
+- `npm run smoke:release` checks production asset pathing, manifest asset emission, and verifies dev debug hooks are not exposed in the production bundle.
+- `npm run smoke:pwa` checks manifest metadata, local icon assets, hosted `/EternalRicochet/` paths, production `dist/` output, and the no-service-worker/no-offline boundary.
 
 - `npm install` completed successfully with no reported vulnerabilities.<br/>**`npm install` 已成功完成，未报告漏洞。**
 - `npm run check:src` checks every JavaScript source and script file.<br/>**`npm run check:src` 会检查所有 JavaScript 源码和脚本文件。**

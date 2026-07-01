@@ -17,6 +17,7 @@ This runs:
 - `npm run smoke:logic`
 - `npm run build`
 - `npm run smoke:release`
+- `npm run smoke:pwa`
 
 Then run a browser smoke against the dev server:
 
@@ -46,8 +47,29 @@ The release smoke verifies:
 
 - `dist/index.html` references bundled assets under `/EternalRicochet/`.
 - `dist/index.html` does not reference `/src/main.js`.
+- `dist/manifest.webmanifest` is emitted.
+- `dist/icons/icon.svg` and `dist/icons/maskable-icon.svg` are emitted.
+- `dist/index.html` references the manifest and local icon under `/EternalRicochet/`.
 - The production JavaScript bundle does not expose `eternal-ricochet-debug-state`.
 - The production JavaScript bundle does not expose `__ETERNAL_RICOCHET_DEV__`.
+
+## PWA Manifest-First Smoke
+
+Phase 8 adds manifest-first install metadata only:
+
+```powershell
+npm run smoke:pwa
+```
+
+The PWA smoke verifies:
+
+- `public/manifest.webmanifest` is parseable and uses the `Eternal Ricochet` / `Ricochet` identity.
+- `start_url`, `scope`, manifest link, and icon links use the `/EternalRicochet/` hosted path.
+- Local SVG icon assets exist for a standard icon and a maskable icon.
+- Production `dist/` output contains the manifest and icon assets after `npm run build`.
+- No service-worker registration, Cache API usage, offline fallback, push notification, background sync, backend/provider SDK, native packaging, or offline claim is introduced by the manifest surface.
+
+External Tailwind and Google Fonts CDN references remain network resources. They are not cached or vendored by Phase 8, and offline behavior remains future scope.
 
 Optional local production preview:
 
@@ -72,7 +94,7 @@ Storage is intentionally centralized through engine stores. UI components should
 Do not include these in the Phase 5 release readiness slice:
 
 - Firebase, accounts, cloud saves, remote telemetry, analytics, or global leaderboards.
-- PWA service-worker caching or offline update behavior.
+- PWA service-worker caching, Cache API usage, offline fallback, install prompt UI, push notifications, background sync, or offline update behavior.
 - Capacitor, Cordova, Electron, app-store packaging, or native mobile build tooling.
 - WebGL, Pixi, shaders, or large rendering dependency migration.
 - New gameplay content, enemies, maps, weapons, upgrades, shop economy changes, or real-money systems.
