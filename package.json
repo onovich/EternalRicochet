@@ -8,8 +8,9 @@
     "build": "vite build",
     "check:src": "node scripts/check-src.mjs",
     "smoke:logic": "node scripts/smoke-core.mjs",
+    "smoke:pwa": "node scripts/smoke-pwa.mjs",
     "smoke:release": "node scripts/smoke-release-gates.mjs",
-    "validate": "npm run check:src && npm run smoke:logic && npm run build && npm run smoke:release",
+    "validate": "npm run check:src && npm run smoke:logic && npm run build && npm run smoke:release && npm run smoke:pwa",
     "preview": "vite preview --host 127.0.0.1"
   },
   "devDependencies": {
