@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { GAME_CONFIG } from "../src/data/gameConfig.js";
 import { createAudioSystem } from "../src/logic/engine/audio.js";
 import {
@@ -898,6 +899,61 @@ function smokeLocalLeaderboardProviderModes() {
   assert.equal(rejected.submit(payload).ok, true);
 }
 
+function smokeLocalLeaderboardProviderCapacityAndReset() {
+  const provider = createLocalLeaderboardProvider({
+    maxEntries: 2,
+    initialEntries: [
+      createValidLeaderboardPayload({ score: 100, displayName: "LOW", clientNonce: "seed-low" }),
+      createValidLeaderboardPayload({ score: 300, displayName: "TOP", clientNonce: "seed-top" }),
+      createValidLeaderboardPayload({ score: 200, displayName: "MID", clientNonce: "seed-mid" }),
+      createValidLeaderboardPayload({ score: -1, displayName: "BAD", clientNonce: "seed-bad" }),
+    ],
+  });
+
+  assert.deepEqual(
+    provider.getEntries().entries.map((entry) => [entry.rank, entry.score, entry.displayName]),
+    [
+      [1, 300, "TOP"],
+      [2, 200, "MID"],
+    ],
+  );
+
+  const duplicateSeed = provider.submit(createValidLeaderboardPayload({ clientNonce: "seed-top" }));
+  assert.equal(duplicateSeed.ok, false);
+  assert.equal(duplicateSeed.code, LOCAL_LEADERBOARD_PROVIDER_CODES.DUPLICATE_CLIENT_NONCE);
+
+  provider.reset();
+  assert.equal(provider.getEntries().entries.length, 0);
+  assert.equal(
+    provider.submit(createValidLeaderboardPayload({ clientNonce: "seed-top" })).code,
+    LOCAL_LEADERBOARD_PROVIDER_CODES.SUCCESS,
+  );
+}
+
+function smokeLocalLeaderboardProviderNoNetworkApis() {
+  const source = readFileSync(
+    new URL("../src/logic/leaderboard/mockProvider.js", import.meta.url),
+    "utf8",
+  );
+  const forbiddenTokens = [
+    "fetch(",
+    "XMLHttpRequest",
+    "WebSocket",
+    "EventSource",
+    "sendBeacon",
+    "serviceWorker",
+    "firebase",
+    "supabase",
+    "cloudflare",
+    "localStorage",
+    "sessionStorage",
+  ];
+
+  for (const token of forbiddenTokens) {
+    assert.equal(source.includes(token), false, `mockProvider.js must not include ${token}`);
+  }
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -1004,6 +1060,8 @@ smokeLeaderboardContractBoundaries();
 smokeLeaderboardEntryNormalization();
 smokeLocalLeaderboardProviderSuccess();
 smokeLocalLeaderboardProviderModes();
+smokeLocalLeaderboardProviderCapacityAndReset();
+smokeLocalLeaderboardProviderNoNetworkApis();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics, leaderboard contract, local leaderboard provider.",
