@@ -46,6 +46,11 @@ import {
   sanitizeDisplayName,
   validateLeaderboardPayload,
 } from "../src/logic/leaderboard/contract.js";
+import {
+  createLocalLeaderboardProvider,
+  LOCAL_LEADERBOARD_PROVIDER_CODES,
+  LOCAL_LEADERBOARD_PROVIDER_MODES,
+} from "../src/logic/leaderboard/mockProvider.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
 
 const effects = {
@@ -813,6 +818,86 @@ function smokeLeaderboardEntryNormalization() {
   assert.equal(invalid.entry, null);
 }
 
+function smokeLocalLeaderboardProviderSuccess() {
+  const provider = createLocalLeaderboardProvider({
+    maxEntries: 2,
+    now: () => "2026-07-01T13:00:00.000Z",
+  });
+
+  const first = provider.submit(
+    createValidLeaderboardPayload({
+      score: 100,
+      displayName: "  FIRST  ",
+      submittedAt: undefined,
+      clientNonce: "run-first",
+    }),
+  );
+  assert.equal(first.ok, true);
+  assert.equal(first.code, LOCAL_LEADERBOARD_PROVIDER_CODES.SUCCESS);
+  assert.equal(first.provider, LEADERBOARD_CONTRACT.providerMode);
+  assert.equal(first.entry.displayName, "FIRST");
+  assert.equal(first.entry.submittedAt, "2026-07-01T13:00:00.000Z");
+
+  const second = provider.submit(
+    createValidLeaderboardPayload({
+      score: 250,
+      displayName: "SECOND",
+      submittedAt: "2026-07-01T12:30:00.000Z",
+      clientNonce: "run-second",
+    }),
+  );
+  assert.equal(second.ok, true);
+  assert.deepEqual(
+    second.entries.map((entry) => [entry.rank, entry.score, entry.displayName]),
+    [
+      [1, 250, "SECOND"],
+      [2, 100, "FIRST"],
+    ],
+  );
+
+  const duplicate = provider.submit(createValidLeaderboardPayload({ clientNonce: "run-second" }));
+  assert.equal(duplicate.ok, false);
+  assert.equal(duplicate.code, LOCAL_LEADERBOARD_PROVIDER_CODES.DUPLICATE_CLIENT_NONCE);
+  assert.equal(duplicate.errors[0].field, "clientNonce");
+
+  const invalid = provider.submit(createValidLeaderboardPayload({ score: -5, clientNonce: "run-bad" }));
+  assert.equal(invalid.ok, false);
+  assert.equal(invalid.code, LOCAL_LEADERBOARD_PROVIDER_CODES.VALIDATION_FAILED);
+  assert.equal(
+    invalid.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_SCORE),
+    true,
+  );
+
+  const entries = provider.getEntries();
+  assert.equal(entries.ok, true);
+  assert.equal(entries.entries.length, 2);
+}
+
+function smokeLocalLeaderboardProviderModes() {
+  const payload = createValidLeaderboardPayload();
+  const disabled = createLocalLeaderboardProvider({ mode: LOCAL_LEADERBOARD_PROVIDER_MODES.DISABLED });
+  assert.equal(disabled.submit(payload).code, LOCAL_LEADERBOARD_PROVIDER_CODES.DISABLED);
+  assert.equal(disabled.getEntries().ok, false);
+
+  const consent = createLocalLeaderboardProvider({
+    mode: LOCAL_LEADERBOARD_PROVIDER_MODES.CONSENT_REQUIRED,
+  });
+  assert.equal(consent.submit(payload).code, LOCAL_LEADERBOARD_PROVIDER_CODES.CONSENT_REQUIRED);
+
+  const unavailable = createLocalLeaderboardProvider({
+    mode: LOCAL_LEADERBOARD_PROVIDER_MODES.UNAVAILABLE,
+  });
+  assert.equal(unavailable.submit(payload).code, LOCAL_LEADERBOARD_PROVIDER_CODES.UNAVAILABLE);
+
+  const rejected = createLocalLeaderboardProvider({ mode: LOCAL_LEADERBOARD_PROVIDER_MODES.REJECTED });
+  const rejectedResult = rejected.submit(payload);
+  assert.equal(rejectedResult.ok, false);
+  assert.equal(rejectedResult.code, LOCAL_LEADERBOARD_PROVIDER_CODES.REJECTED);
+
+  assert.equal(rejected.setMode("unknown-mode"), LOCAL_LEADERBOARD_PROVIDER_MODES.ENABLED);
+  assert.equal(rejected.submit(payload).ok, true);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -917,7 +1002,9 @@ smokeAudioMutePreference();
 smokeLeaderboardContractValidation();
 smokeLeaderboardContractBoundaries();
 smokeLeaderboardEntryNormalization();
+smokeLocalLeaderboardProviderSuccess();
+smokeLocalLeaderboardProviderModes();
 
 console.log(
-  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics, leaderboard contract.",
+  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics, leaderboard contract, local leaderboard provider.",
 );
