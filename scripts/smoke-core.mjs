@@ -48,6 +48,11 @@ import {
   validateLeaderboardPayload,
 } from "../src/logic/leaderboard/contract.js";
 import {
+  getLeaderboardCopy,
+  LEADERBOARD_COPY,
+  LEADERBOARD_COPY_KEYS,
+} from "../src/logic/leaderboard/copy.js";
+import {
   createLocalLeaderboardProvider,
   LOCAL_LEADERBOARD_PROVIDER_CODES,
   LOCAL_LEADERBOARD_PROVIDER_MODES,
@@ -954,6 +959,46 @@ function smokeLocalLeaderboardProviderNoNetworkApis() {
   }
 }
 
+function smokeLeaderboardCopyBoundary() {
+  const expectedKeys = [
+    LEADERBOARD_COPY_KEYS.LOCAL_ONLY,
+    LEADERBOARD_COPY_KEYS.CONSENT_REQUIRED,
+    LEADERBOARD_COPY_KEYS.PUBLIC_DISPLAY_WARNING,
+    LEADERBOARD_COPY_KEYS.DISABLED,
+    LEADERBOARD_COPY_KEYS.UNAVAILABLE,
+    LEADERBOARD_COPY_KEYS.VALIDATION_FAILED,
+    LEADERBOARD_COPY_KEYS.DUPLICATE_REJECTED,
+    LEADERBOARD_COPY_KEYS.PRIVACY_BOUNDARY,
+  ];
+
+  assert.deepEqual(Object.values(LEADERBOARD_COPY_KEYS), expectedKeys);
+  for (const key of expectedKeys) {
+    const copy = getLeaderboardCopy(key);
+    assert.equal(typeof copy.title, "string");
+    assert.equal(copy.title.length > 0, true);
+    assert.equal(typeof copy.body, "string");
+    assert.equal(copy.body.length > 0, true);
+  }
+
+  assert.equal(
+    getLeaderboardCopy(LEADERBOARD_COPY_KEYS.LOCAL_ONLY).body.includes("not uploaded"),
+    true,
+  );
+  assert.equal(
+    getLeaderboardCopy(LEADERBOARD_COPY_KEYS.CONSENT_REQUIRED).body.includes("require consent"),
+    true,
+  );
+  assert.equal(
+    getLeaderboardCopy(LEADERBOARD_COPY_KEYS.DISABLED).body.includes("Local high score"),
+    true,
+  );
+  assert.equal(
+    getLeaderboardCopy(LEADERBOARD_COPY_KEYS.PRIVACY_BOUNDARY).body.includes("localStorage"),
+    true,
+  );
+  assert.equal(getLeaderboardCopy("missing-key"), LEADERBOARD_COPY[LEADERBOARD_COPY_KEYS.LOCAL_ONLY]);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -1062,6 +1107,7 @@ smokeLocalLeaderboardProviderSuccess();
 smokeLocalLeaderboardProviderModes();
 smokeLocalLeaderboardProviderCapacityAndReset();
 smokeLocalLeaderboardProviderNoNetworkApis();
+smokeLeaderboardCopyBoundary();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics, leaderboard contract, local leaderboard provider.",
