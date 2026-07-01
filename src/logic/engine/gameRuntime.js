@@ -90,7 +90,7 @@ export function createGameRuntime({
   });
   const audio = createAudioSystem({ getGameState, windowRef });
   const hud = createHud(documentRef);
-  const renderer = createRenderer({ canvas, ctx, input, config });
+  const renderer = createRenderer({ canvas, ctx, input, config, quality: renderQuality.profile });
   const metaStore = createMetaProgressionStore({
     storage: windowRef.localStorage,
     config: config.metaProgression,

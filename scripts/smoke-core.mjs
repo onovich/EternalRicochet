@@ -27,6 +27,7 @@ import {
 } from "../src/logic/engine/metaProgression.js";
 import { createParticlePool } from "../src/logic/engine/particlePool.js";
 import { createPerformanceMetrics } from "../src/logic/engine/performanceMetrics.js";
+import { createRenderer } from "../src/logic/engine/renderer.js";
 import { resolveRenderQuality } from "../src/logic/engine/renderQuality.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
@@ -424,6 +425,51 @@ function smokeParticlePoolCapacityAndReset() {
   assert.equal(pool.getStats().inactive, 3);
 }
 
+function smokeRendererLowQualityGlowScale() {
+  const canvas = { width: 320, height: 240 };
+  const ctx = createRecordingCanvasContext();
+  const input = {
+    getAimState() {
+      return {
+        isTouchDevice: false,
+        mouse: { x: 260, y: 120 },
+        leftStick: {},
+        rightStick: {},
+      };
+    },
+  };
+  const renderer = createRenderer({
+    canvas,
+    ctx,
+    input,
+    config: GAME_CONFIG,
+    quality: GAME_CONFIG.renderQuality.tiers.low,
+  });
+  const player = new Player(canvas);
+  const bullet = new Bullet();
+  bullet.fireFrom({ x: player.x, y: player.y }, 0);
+  for (let i = 0; i < 12; i += 1) {
+    bullet.trail.push({ x: player.x + i * 10, y: player.y });
+  }
+
+  renderer.render({
+    gameState: "PLAYING",
+    player,
+    bullet,
+    enemies: [],
+    obstacles: [],
+    projectiles: [],
+    particles: [],
+    frameCount: 0,
+    shakeTime: 10,
+  });
+
+  const shadowBlurValues = ctx.calls
+    .filter((call) => call.type === "set" && call.name === "shadowBlur")
+    .map((call) => call.value);
+  assert.ok(Math.max(...shadowBlurValues) <= 20 * GAME_CONFIG.renderQuality.tiers.low.glowScale);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -434,6 +480,34 @@ function createMemoryStorage() {
       values.set(key, String(value));
     },
   };
+}
+
+function createRecordingCanvasContext() {
+  const calls = [];
+  const context = {
+    calls,
+    save() {},
+    restore() {},
+    translate() {},
+    rotate() {},
+    beginPath() {},
+    arc() {},
+    fill() {},
+    stroke() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    fillRect() {},
+    setLineDash() {},
+  };
+
+  return new Proxy(context, {
+    set(target, name, value) {
+      if (name === "shadowBlur") calls.push({ type: "set", name, value });
+      target[name] = value;
+      return true;
+    },
+  });
 }
 
 smokeBulletFireReset();
@@ -453,6 +527,7 @@ smokeRenderQualityResolution();
 smokePerformanceMetricsAggregation();
 smokeDevStressSeedResolution();
 smokeParticlePoolCapacityAndReset();
+smokeRendererLowQualityGlowScale();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",

@@ -1,6 +1,18 @@
 import { GAME_CONFIG } from "../../data/gameConfig.js";
+import { getRenderQualityProfile } from "./renderQuality.js";
 
-export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
+export function createRenderer({
+  canvas,
+  ctx,
+  input,
+  config = GAME_CONFIG,
+  quality = getRenderQualityProfile(GAME_CONFIG.renderQuality.defaultTier),
+}) {
+  const qualityProfile = {
+    ...getRenderQualityProfile(config.renderQuality.defaultTier, config.renderQuality),
+    ...quality,
+  };
+
   function render({ gameState, player, bullet, enemies, obstacles, projectiles, particles, frameCount, shakeTime }) {
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = config.canvas.background;
@@ -26,7 +38,7 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
 
   function applyScreenShake(shakeTime) {
     if (shakeTime <= 0) return;
-    const mag = (shakeTime / 15) * 8;
+    const mag = (shakeTime / 15) * 8 * qualityProfile.screenShakeScale;
     ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
   }
 
@@ -64,7 +76,7 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     ctx.fillStyle = obstacle.coreColor;
     ctx.strokeStyle = obstacle.color;
     ctx.lineWidth = 3;
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = scaleGlow(18);
     ctx.shadowColor = obstacle.color;
     ctx.fill();
     ctx.stroke();
@@ -83,7 +95,7 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     ctx.beginPath();
     ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
     ctx.fillStyle = projectile.color;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = scaleGlow(12);
     ctx.shadowColor = projectile.color;
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -92,11 +104,12 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
   function drawBullet(bullet) {
     if (!bullet.active) return;
 
-    if (bullet.trail.length > 1) {
+    const trail = getBulletTrailPoints(bullet);
+    if (trail.length > 1) {
       ctx.beginPath();
-      ctx.moveTo(bullet.trail[0].x, bullet.trail[0].y);
-      for (let i = 1; i < bullet.trail.length; i += 1) {
-        ctx.lineTo(bullet.trail[i].x, bullet.trail[i].y);
+      ctx.moveTo(trail[0].x, trail[0].y);
+      for (let i = 1; i < trail.length; i += 1) {
+        ctx.lineTo(trail[i].x, trail[i].y);
       }
       ctx.strokeStyle = bullet.isRecalling ? bullet.config.recallTrailColor : bullet.color;
       ctx.lineWidth = bullet.radius;
@@ -109,7 +122,7 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     ctx.beginPath();
     ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff";
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = scaleGlow(20);
     ctx.shadowColor = bullet.isRecalling ? bullet.config.recallGlowColor : bullet.color;
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -121,7 +134,7 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     ctx.rotate(Math.atan2(player.y - enemy.y, player.x - enemy.x));
     ctx.strokeStyle = enemy.color;
     ctx.lineWidth = 3;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = scaleGlow(10);
     ctx.shadowColor = enemy.color;
     ctx.fillStyle = "rgba(0,0,0,0.5)";
 
@@ -161,7 +174,7 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     ctx.beginPath();
     ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
     ctx.fillStyle = player.color;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = scaleGlow(15);
     ctx.shadowColor = player.color;
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -240,6 +253,16 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
       ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
       ctx.fill();
     }
+  }
+
+  function getBulletTrailPoints(bullet) {
+    const limit = Math.max(0, Math.floor(qualityProfile.bulletTrailLength));
+    if (limit <= 0) return [];
+    return bullet.trail.slice(Math.max(0, bullet.trail.length - limit));
+  }
+
+  function scaleGlow(value) {
+    return Math.max(0, value * qualityProfile.glowScale);
   }
 
   return { render };
