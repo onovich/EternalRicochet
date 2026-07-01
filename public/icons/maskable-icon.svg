@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Eternal Ricochet maskable icon</title>
+  <desc id="desc">Safe-area neon ricochet bullet mark for installed app surfaces.</desc>
+  <defs>
+    <radialGradient id="maskBg" cx="50%" cy="50%" r="74%">
+      <stop offset="0%" stop-color="#0b3140"/>
+      <stop offset="62%" stop-color="#070a18"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#maskBg)"/>
+  <circle cx="256" cy="256" r="176" fill="none" stroke="#00ffff" stroke-width="18" opacity="0.5"/>
+  <path d="M146 316 L248 214 L222 160 L354 210 L308 348 L278 282 L166 388"
+        fill="none" stroke="#00ffff" stroke-width="32" stroke-linecap="round"
+        stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="M146 316 L248 214 L222 160 L354 210 L308 348 L278 282 L166 388"
+        fill="none" stroke="#b9ffff" stroke-width="9" stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <circle cx="365" cy="202" r="39" fill="#ffcc00" filter="url(#glow)"/>
+  <circle cx="365" cy="202" r="15" fill="#fff2a2"/>
+  <path d="M396 138 L430 172 M386 296 L430 328" stroke="#ff00aa"
+        stroke-width="16" stroke-linecap="round" filter="url(#glow)"/>
+</svg>

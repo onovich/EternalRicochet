@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Eternal Ricochet icon</title>
+  <desc id="desc">Neon bullet ricocheting through a dark arcade arena.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#12324a"/>
+      <stop offset="54%" stop-color="#070a18"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+    <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="pinkGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path d="M72 350 L210 220 L166 138 L332 198 L278 374 L236 288 L96 418"
+        fill="none" stroke="#00ffff" stroke-width="30" stroke-linecap="round"
+        stroke-linejoin="round" filter="url(#cyanGlow)"/>
+  <path d="M72 350 L210 220 L166 138 L332 198 L278 374 L236 288 L96 418"
+        fill="none" stroke="#aafcff" stroke-width="8" stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <circle cx="350" cy="186" r="45" fill="#ffcc00" filter="url(#pinkGlow)"/>
+  <circle cx="350" cy="186" r="18" fill="#fff5a8"/>
+  <path d="M388 104 L436 152 M426 80 L456 110 M402 256 L456 292"
+        stroke="#ff00aa" stroke-width="18" stroke-linecap="round" filter="url(#pinkGlow)"/>
+  <path d="M82 92 H430 M82 454 H430" stroke="#00ffff" stroke-width="8"
+        stroke-linecap="round" opacity="0.38"/>
+</svg>

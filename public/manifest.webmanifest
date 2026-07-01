@@ -1,0 +1,29 @@
+{
+  "name": "Eternal Ricochet",
+  "short_name": "Ricochet",
+  "description": "A neon arcade survival game built around one reusable ricocheting bullet.",
+  "id": "/EternalRicochet/",
+  "start_url": "/EternalRicochet/",
+  "scope": "/EternalRicochet/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "theme_color": "#00ffff",
+  "background_color": "#050505",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/EternalRicochet/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/EternalRicochet/icons/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
