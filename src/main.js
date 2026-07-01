@@ -4,6 +4,7 @@ import { GAME_CONFIG } from "./data/gameConfig.js";
 import { runWhenDomReady } from "./logic/hooks/domReady.js";
 import { createGameRuntime } from "./logic/engine/gameRuntime.js";
 import { seedMetaStateFromSearch } from "./logic/engine/metaProgression.js";
+import { registerServiceWorker } from "./logic/offline/serviceWorkerClient.js";
 
 runWhenDomReady(() => {
   prepareDocument();
@@ -35,4 +36,8 @@ runWhenDomReady(() => {
     });
   }
   runtime.start();
+  registerServiceWorker({
+    runtime,
+    enabled: import.meta.env.PROD,
+  });
 });
