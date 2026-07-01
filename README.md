@@ -13,6 +13,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Bullet firing now resets position, velocity, recall state, trail history, and enemy-hit cooldowns through `Bullet.fireFrom`; wall and enemy rebound behavior is config-driven.<br/>**子弹发射现在通过 `Bullet.fireFrom` 重置位置、速度、召回状态、轨迹和敌人命中冷却；墙面和敌人反弹行为由配置控制。**
 - Phase 1 completion evidence is recorded in `docs/phase-1-validation-report.md`.<br/>**Phase 1 完成证据已记录在 `docs/phase-1-validation-report.md`。**
 - Phase 3 completion evidence is recorded in `docs/phase-3-validation-report.md`; local meta progression now covers credits, an upgrade shop, and three persistent upgrades.<br/>**Phase 3 完成证据记录在 `docs/phase-3-validation-report.md`；本地局外养成现在覆盖货币、升级商店和三项持久升级。**
+- Phase 4 planning is recorded in `docs/phase-4-performance-visual-fidelity-goal-mode-execution-guide.md`.<br/>**Phase 4 规划记录在 `docs/phase-4-performance-visual-fidelity-goal-mode-execution-guide.md`。**
 
 ## Run Locally
 
