@@ -37,6 +37,13 @@ import {
   readSettings,
   sanitizeSettings,
 } from "../src/logic/engine/settings.js";
+import {
+  LEADERBOARD_CONTRACT,
+  LEADERBOARD_ERROR_CODES,
+  normalizeLeaderboardEntry,
+  sanitizeDisplayName,
+  validateLeaderboardPayload,
+} from "../src/logic/leaderboard/contract.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
 
 const effects = {
@@ -644,6 +651,94 @@ function smokeAudioMutePreference() {
   assert.equal(audioCalls.includes("oscillator"), true);
 }
 
+function smokeLeaderboardContractValidation() {
+  assert.equal(sanitizeDisplayName("  ACE\nRIDER   "), "ACE RIDER");
+  assert.equal(sanitizeDisplayName("0123456789abcdefXYZ"), "0123456789abcdef");
+  assert.equal(sanitizeDisplayName(" \n\t ", { fallback: LEADERBOARD_CONTRACT.anonymousLabel }), "LOCAL PLAYER");
+
+  const valid = validateLeaderboardPayload(createValidLeaderboardPayload());
+  assert.equal(valid.valid, true);
+  assert.equal(valid.payload.score, 1234);
+  assert.equal(valid.payload.displayName, "ACE");
+  assert.equal(valid.payload.anonymousLabel, "LOCAL PLAYER");
+  assert.equal(valid.payload.submittedAt, "2026-07-01T12:00:00.000Z");
+
+  const anonymous = validateLeaderboardPayload(createValidLeaderboardPayload({ displayName: undefined }));
+  assert.equal(anonymous.valid, true);
+  assert.equal(anonymous.payload.displayName, "");
+
+  const emptyName = validateLeaderboardPayload(createValidLeaderboardPayload({ displayName: " \n " }));
+  assert.equal(emptyName.valid, false);
+  assert.equal(emptyName.errors[0].code, LEADERBOARD_ERROR_CODES.INVALID_DISPLAY_NAME);
+
+  const invalidScore = validateLeaderboardPayload(createValidLeaderboardPayload({ score: -1 }));
+  assert.equal(invalidScore.valid, false);
+  assert.equal(invalidScore.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_SCORE), true);
+
+  const fractionalScore = validateLeaderboardPayload(createValidLeaderboardPayload({ score: 12.5 }));
+  assert.equal(fractionalScore.valid, false);
+  assert.equal(
+    fractionalScore.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_SCORE),
+    true,
+  );
+
+  const invalidVersion = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ contractVersion: "future-contract" }),
+  );
+  assert.equal(invalidVersion.valid, false);
+  assert.equal(
+    invalidVersion.errors.some(
+      (error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_CONTRACT_VERSION,
+    ),
+    true,
+  );
+
+  const forbidden = validateLeaderboardPayload(
+    createValidLeaderboardPayload({
+      settings: { renderQuality: "low" },
+      localStorage: "{}",
+    }),
+  );
+  assert.equal(forbidden.valid, false);
+  assert.equal(
+    forbidden.errors.filter((error) => error.code === LEADERBOARD_ERROR_CODES.FORBIDDEN_FIELD).length,
+    2,
+  );
+
+  const suspicious = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ score: 200000, runDurationFrames: 30 }),
+  );
+  assert.equal(suspicious.valid, true);
+  assert.equal(
+    suspicious.warnings.some((warning) => warning.code === LEADERBOARD_ERROR_CODES.SUSPICIOUS_SCORE),
+    true,
+  );
+}
+
+function smokeLeaderboardEntryNormalization() {
+  const named = normalizeLeaderboardEntry(createValidLeaderboardPayload(), { rank: 2.8 });
+
+  assert.equal(named.valid, true);
+  assert.deepEqual(named.entry, {
+    rank: 2,
+    score: 1234,
+    displayName: "ACE",
+    submittedAt: "2026-07-01T12:00:00.000Z",
+    gameVersion: "0.1.0",
+    buildId: "local-dev",
+    scoreEra: LEADERBOARD_CONTRACT.scoreEra,
+    source: LEADERBOARD_CONTRACT.providerMode,
+  });
+
+  const anonymous = normalizeLeaderboardEntry(createValidLeaderboardPayload({ displayName: undefined }));
+  assert.equal(anonymous.valid, true);
+  assert.equal(anonymous.entry.displayName, LEADERBOARD_CONTRACT.anonymousLabel);
+
+  const invalid = normalizeLeaderboardEntry(createValidLeaderboardPayload({ scoreEra: "future" }));
+  assert.equal(invalid.valid, false);
+  assert.equal(invalid.entry, null);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -653,6 +748,22 @@ function createMemoryStorage() {
     setItem(key, value) {
       values.set(key, String(value));
     },
+  };
+}
+
+function createValidLeaderboardPayload(patch = {}) {
+  return {
+    contractVersion: LEADERBOARD_CONTRACT.version,
+    score: 1234,
+    displayName: "ACE",
+    anonymousLabel: LEADERBOARD_CONTRACT.anonymousLabel,
+    submittedAt: "2026-07-01T12:00:00.000Z",
+    gameVersion: "0.1.0",
+    buildId: "local-dev",
+    runDurationFrames: 3600,
+    clientNonce: "local-run-001",
+    scoreEra: LEADERBOARD_CONTRACT.scoreEra,
+    ...patch,
   };
 }
 
@@ -729,7 +840,9 @@ smokeRendererLowQualityGlowScale();
 smokeRendererProjectileTrailQualitySwitch();
 smokeSettingsPersistence();
 smokeAudioMutePreference();
+smokeLeaderboardContractValidation();
+smokeLeaderboardEntryNormalization();
 
 console.log(
-  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",
+  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics, leaderboard contract.",
 );
