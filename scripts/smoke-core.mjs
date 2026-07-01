@@ -24,6 +24,8 @@ import {
   seedMetaStateFromSearch,
   writeHighScore,
 } from "../src/logic/engine/metaProgression.js";
+import { createPerformanceMetrics } from "../src/logic/engine/performanceMetrics.js";
+import { resolveRenderQuality } from "../src/logic/engine/renderQuality.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
 
@@ -339,6 +341,47 @@ function smokeMetaProgressionUpgradeEffects() {
   assert.equal(GAME_CONFIG.bullet.recallForce, 2);
 }
 
+function smokeRenderQualityResolution() {
+  const low = resolveRenderQuality({ search: "?erQuality=low" });
+  assert.equal(low.tier, "low");
+  assert.equal(low.profile.glowScale, GAME_CONFIG.renderQuality.tiers.low.glowScale);
+  assert.equal(low.profile.particleCap, GAME_CONFIG.renderQuality.tiers.low.particleCap);
+
+  const fallback = resolveRenderQuality({ search: "?erQuality=unknown" });
+  assert.equal(fallback.tier, GAME_CONFIG.renderQuality.defaultTier);
+  assert.equal(fallback.profile.glowScale, GAME_CONFIG.renderQuality.tiers.high.glowScale);
+}
+
+function smokePerformanceMetricsAggregation() {
+  const metrics = createPerformanceMetrics({ sampleSize: 2 });
+
+  metrics.recordFrame(16, {
+    counts: { enemies: 1, obstacles: 3, projectiles: 2, particles: 20, bulletActive: true },
+    qualityTier: "medium",
+  });
+  metrics.recordFrame(20, {
+    counts: { enemies: 2, obstacles: 3, projectiles: 1, particles: 18, bulletActive: false },
+    qualityTier: "low",
+  });
+  const state = metrics.recordFrame(10, {
+    counts: { enemies: 3, obstacles: 3, projectiles: 0, particles: 9, bulletActive: true },
+  });
+
+  assert.equal(state.frameCount, 3);
+  assert.equal(state.sampleSize, 2);
+  assert.equal(state.lastFrameMs, 10);
+  assert.equal(state.averageFrameMs, 15);
+  assert.equal(state.worstFrameMs, 20);
+  assert.deepEqual(state.counts, {
+    enemies: 3,
+    obstacles: 3,
+    projectiles: 0,
+    particles: 9,
+    bulletActive: 1,
+  });
+  assert.equal(state.qualityTier, "low");
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -364,7 +407,9 @@ smokeMetaProgressionDevSeed();
 smokeHighScorePersistence();
 smokeMetaProgressionRunSettlement();
 smokeMetaProgressionUpgradeEffects();
+smokeRenderQualityResolution();
+smokePerformanceMetricsAggregation();
 
 console.log(
-  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter projectile lifecycle, meta progression persistence.",
+  "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",
 );

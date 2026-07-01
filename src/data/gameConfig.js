@@ -147,6 +147,35 @@ export const GAME_CONFIG = Object.freeze({
     minSize: 2,
     sizeVariance: 3,
   },
+  performance: {
+    metricsSampleSize: 120,
+  },
+  renderQuality: {
+    defaultTier: "high",
+    tiers: {
+      high: {
+        glowScale: 1,
+        particleCap: 420,
+        bulletTrailLength: 10,
+        screenShakeScale: 1,
+        projectileTrail: true,
+      },
+      medium: {
+        glowScale: 0.7,
+        particleCap: 260,
+        bulletTrailLength: 8,
+        screenShakeScale: 0.85,
+        projectileTrail: true,
+      },
+      low: {
+        glowScale: 0.35,
+        particleCap: 140,
+        bulletTrailLength: 5,
+        screenShakeScale: 0.65,
+        projectileTrail: false,
+      },
+    },
+  },
   feedback: {
     shotShake: 3,
     wallBounceShake: 2,

@@ -20,7 +20,9 @@ import {
   readHighScore,
   writeHighScore,
 } from "./metaProgression.js";
+import { createPerformanceMetrics } from "./performanceMetrics.js";
 import { createRenderer } from "./renderer.js";
+import { resolveRenderQuality } from "./renderQuality.js";
 import { ComboState } from "./scoring.js";
 import { createUpgradeShop } from "../../view/components/upgradeShop.js";
 
@@ -51,6 +53,14 @@ export function createGameRuntime({
   let started = false;
   let shooterIntroduced = false;
   let lastSettlement = null;
+  const renderQuality = resolveRenderQuality({
+    search: windowRef.location?.search ?? "",
+    config: config.renderQuality,
+  });
+  const performanceMetrics = createPerformanceMetrics({
+    sampleSize: config.performance.metricsSampleSize,
+    now: () => windowRef.performance?.now?.() ?? Date.now(),
+  });
 
   function getBounds() {
     return { width: canvas.width, height: canvas.height };
@@ -344,6 +354,7 @@ export function createGameRuntime({
 
   function gameLoop() {
     windowRef.requestAnimationFrame(gameLoop);
+    performanceMetrics.beginFrame();
 
     if (gameState === "PLAYING") {
       updatePlaying();
@@ -361,6 +372,10 @@ export function createGameRuntime({
       particles,
       frameCount,
       shakeTime,
+    });
+    performanceMetrics.endFrame({
+      counts: getPerformanceCounts(),
+      qualityTier: renderQuality.tier,
     });
     if (shakeTime > 0 && freezeFrames <= 0) shakeTime -= 1;
   }
@@ -409,11 +424,23 @@ export function createGameRuntime({
       combo: combo.getHudState(),
       meta: metaStore.getState(),
       settlement: lastSettlement,
+      performance: performanceMetrics.getState(),
+      renderQuality,
       runConfig: {
         playerHp: runConfig.player.hp,
         bulletRecallForce: runConfig.bullet.recallForce,
         bulletKillDamping: runConfig.bullet.killDamping,
       },
+    };
+  }
+
+  function getPerformanceCounts() {
+    return {
+      enemies: enemies.length,
+      obstacles: obstacles.length,
+      projectiles: projectiles.length,
+      particles: particles.length,
+      bulletActive: bullet.active,
     };
   }
 
