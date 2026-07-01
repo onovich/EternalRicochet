@@ -27,6 +27,7 @@ Scope: manifest-first install metadata only; no service worker or offline cache
 - Provide one standard icon entry and one maskable icon entry:
   - `/EternalRicochet/icons/icon.svg`
   - `/EternalRicochet/icons/maskable-icon.svg`
+- Reuse `/EternalRicochet/icons/icon.svg` as the page favicon so the browser and install metadata share the same local identity asset.
 - Use a dark square background, cyan/fuchsia neon contrast, and a ricochet/bullet motif so the icon remains recognizable at install sizes.
 - Keep icon assets static and committed; do not add a runtime dependency or generated `dist/` output.
 
