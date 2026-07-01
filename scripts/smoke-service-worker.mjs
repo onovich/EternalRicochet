@@ -68,6 +68,8 @@ function assertServiceWorkerRuntime() {
     "self.addEventListener(\"install\"",
     "caches.open(CACHE_NAME)",
     "cache.addAll(PRECACHE_URLS)",
+    "cache.put(request, response.clone())",
+    "cache.put(APP_SHELL_FALLBACK, response.clone())",
     "self.addEventListener(\"activate\"",
     "caches.keys()",
     "caches.delete(name)",

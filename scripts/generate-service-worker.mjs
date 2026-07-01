@@ -133,13 +133,25 @@ self.addEventListener("fetch", (event) => {
 });
 
 async function cacheFirst(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
-  return cached ?? fetch(request);
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (response.ok) {
+    await cache.put(request, response.clone());
+  }
+  return response;
 }
 
 async function networkFirstNavigation(request) {
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(APP_SHELL_FALLBACK, response.clone());
+    }
+    return response;
   } catch (error) {
     const cached = await caches.match(APP_SHELL_FALLBACK);
     if (cached) return cached;
