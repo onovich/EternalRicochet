@@ -15,6 +15,7 @@ import {
   calculateCreditsEarned,
   createDefaultMetaState,
   createMetaProgressionStore,
+  createRunSettlement,
   purchaseUpgrade,
   readMetaState,
   sanitizeMetaState,
@@ -252,6 +253,25 @@ function smokeMetaProgressionStore() {
   assert.equal(reloaded.upgrades.gravityRecall, 1);
 }
 
+function smokeMetaProgressionRunSettlement() {
+  const store = createMetaProgressionStore({ storage: createMemoryStorage() });
+  const settlement = createRunSettlement(store);
+
+  const first = settlement.settleScore(250);
+  const second = settlement.settleScore(250);
+
+  assert.equal(first.earned, 10);
+  assert.equal(first.alreadySettled, false);
+  assert.equal(second.earned, 10);
+  assert.equal(second.alreadySettled, true);
+  assert.equal(store.getState().credits, 10);
+
+  settlement.reset();
+  const afterReset = settlement.settleScore(25);
+  assert.equal(afterReset.earned, 1);
+  assert.equal(store.getState().credits, 11);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -273,6 +293,7 @@ smokeShooterProjectileLifecycle();
 smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();
 smokeMetaProgressionStore();
+smokeMetaProgressionRunSettlement();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter projectile lifecycle, meta progression persistence.",

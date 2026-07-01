@@ -5,6 +5,8 @@ export function createHud(documentRef = document) {
   const gameOverMenu = documentRef.getElementById("game-over-menu");
   const finalScore = documentRef.getElementById("final-score");
   const highScore = documentRef.getElementById("high-score");
+  const creditsEarned = documentRef.getElementById("credits-earned");
+  const totalCredits = documentRef.getElementById("total-credits");
   const healthBar = documentRef.getElementById("health-bar");
   const ammoDisplay = documentRef.getElementById("ammo-display");
   const comboDisplay = documentRef.getElementById("combo-display");
@@ -18,11 +20,13 @@ export function createHud(documentRef = document) {
     gameOverMenu.classList.add("hidden");
   }
 
-  function showGameOver({ scoreValue, highScoreValue }) {
+  function showGameOver({ scoreValue, highScoreValue, settlement }) {
     uiLayer.classList.remove("hidden");
     gameOverMenu.classList.remove("hidden");
     finalScore.innerText = scoreValue;
     highScore.innerText = highScoreValue;
+    if (creditsEarned) creditsEarned.innerText = settlement?.earned ?? 0;
+    if (totalCredits) totalCredits.innerText = settlement?.state?.credits ?? 0;
     hud.classList.add("hidden");
   }
 

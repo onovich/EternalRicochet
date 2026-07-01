@@ -13,6 +13,7 @@ import { Bullet, Enemy, EnemyProjectile, Particle, Player } from "./entities.js"
 import { createHud } from "./hud.js";
 import { createInputController } from "./input.js";
 import { createObstacleLayout } from "./level.js";
+import { createMetaProgressionStore, createRunSettlement } from "./metaProgression.js";
 import { createRenderer } from "./renderer.js";
 import { ComboState } from "./scoring.js";
 
@@ -41,6 +42,7 @@ export function createGameRuntime({
   const combo = new ComboState(config.combo);
   let started = false;
   let shooterIntroduced = false;
+  let lastSettlement = null;
 
   function getBounds() {
     return { width: canvas.width, height: canvas.height };
@@ -59,6 +61,11 @@ export function createGameRuntime({
   const audio = createAudioSystem({ getGameState, windowRef });
   const hud = createHud(documentRef);
   const renderer = createRenderer({ canvas, ctx, input, config });
+  const metaStore = createMetaProgressionStore({
+    storage: windowRef.localStorage,
+    config: config.metaProgression,
+  });
+  const runSettlement = createRunSettlement(metaStore);
 
   const effects = {
     audio: audio.sfx,
@@ -90,6 +97,8 @@ export function createGameRuntime({
     spawnTimer = 0;
     currentSpawnInterval = config.enemy.baseSpawnInterval;
     shooterIntroduced = false;
+    runSettlement.reset();
+    lastSettlement = null;
     input.resetTransient();
     hud.showPlaying();
     updateHud();
@@ -101,11 +110,16 @@ export function createGameRuntime({
     gameState = "GAMEOVER";
     combo.reset();
     projectiles = [];
+    lastSettlement = runSettlement.settleScore(score);
     if (score > highScore) {
       highScore = score;
       windowRef.localStorage.setItem("eternalRicochetHighScore", String(highScore));
     }
-    hud.showGameOver({ scoreValue: score, highScoreValue: highScore });
+    hud.showGameOver({
+      scoreValue: score,
+      highScoreValue: highScore,
+      settlement: lastSettlement,
+    });
   }
 
   function spawnEnemy() {
@@ -378,6 +392,8 @@ export function createGameRuntime({
         wallBounces: projectile.wallBounces,
       })),
       combo: combo.getHudState(),
+      meta: metaStore.getState(),
+      settlement: lastSettlement,
     };
   }
 
@@ -396,6 +412,8 @@ export function createGameRuntime({
       projectiles,
       particles,
       combo: combo.getHudState(),
+      meta: metaStore.getState(),
+      settlement: lastSettlement,
     }),
   };
 }

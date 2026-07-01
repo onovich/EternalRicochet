@@ -12,6 +12,8 @@ export const DOM_IDS = Object.freeze({
   gameOverMenu: "game-over-menu",
   finalScore: "final-score",
   highScore: "high-score",
+  creditsEarned: "credits-earned",
+  totalCredits: "total-credits",
   startButton: "start-btn",
   restartButton: "restart-btn",
 });

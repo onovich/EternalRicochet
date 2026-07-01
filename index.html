@@ -72,6 +72,16 @@
                 <p class="text-gray-400 mb-6">最终得分</p>
                 <div class="text-6xl font-bold text-white mb-2 font-cyber neon-text" id="final-score">0</div>
                 <div class="text-sm text-yellow-500 mb-8 font-cyber">最高分 BEST: <span id="high-score">0</span></div>
+                <div class="mb-6 grid grid-cols-2 gap-3 text-xs md:text-sm font-cyber">
+                    <div class="rounded-lg border border-yellow-500/30 bg-black/40 px-3 py-2">
+                        <div class="text-gray-500">EARNED</div>
+                        <div class="text-yellow-300 text-lg">+<span id="credits-earned">0</span></div>
+                    </div>
+                    <div class="rounded-lg border border-cyan-500/30 bg-black/40 px-3 py-2">
+                        <div class="text-gray-500">CREDITS</div>
+                        <div class="text-cyan-300 text-lg"><span id="total-credits">0</span></div>
+                    </div>
+                </div>
                 
                 <button id="restart-btn" class="w-full px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(255,0,0,0.4)] text-lg tracking-widest outline-none">
                     重新启动 (REBOOT)

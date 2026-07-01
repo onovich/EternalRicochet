@@ -160,6 +160,31 @@ export function createMetaProgressionStore({
   };
 }
 
+export function createRunSettlement(store) {
+  let settled = false;
+  let lastResult = null;
+
+  return {
+    reset: () => {
+      settled = false;
+      lastResult = null;
+    },
+    settleScore: (score) => {
+      if (settled) {
+        return { ...lastResult, alreadySettled: true };
+      }
+      const result = store.awardScore(score);
+      settled = true;
+      lastResult = {
+        earned: result.earned,
+        state: result.state,
+        saved: result.saved,
+      };
+      return { ...lastResult, alreadySettled: false };
+    },
+  };
+}
+
 function getUpgradeEntries(config) {
   return Object.entries(config.upgrades);
 }
@@ -178,4 +203,3 @@ function clampInteger(value, min, max) {
   if (!Number.isFinite(Number(value))) return min;
   return Math.max(min, Math.min(max, Math.floor(Number(value))));
 }
-
