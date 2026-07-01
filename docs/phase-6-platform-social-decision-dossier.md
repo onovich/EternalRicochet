@@ -343,6 +343,94 @@ Validation:
 - iOS simulator/device smoke on macOS if iOS is in scope.
 - Store packaging dry run only after signing and metadata are approved.
 
+## Future Architecture Boundary
+
+The future platform/social layer should be isolated from gameplay and rendering. Do not let a backend provider leak into physics, renderer, input, meta progression, settings, or collision modules.
+
+Documentation-only pseudocode:
+
+```js
+// src/logic/platform/leaderboardClient.js in a future approved phase
+export function createLeaderboardClient({ provider, consentStore, buildInfo }) {
+  return {
+    canSubmitScore() {},
+    validateSubmission(runResult) {},
+    submitScore(runResult, playerConsent) {},
+    fetchLeaderboard({ limit, era }) {},
+  };
+}
+```
+
+The future implementation should keep these boundaries:
+
+| Boundary | Allowed Dependency Direction | Must Not Do |
+| --- | --- | --- |
+| Runtime/gameplay | Runtime may create a run settlement result. | Runtime must not import Firebase/Capacitor/Cordova or own network retries. |
+| Meta progression | Meta store may remain local-only fallback. | Do not upload full credits/upgrades storage. |
+| Settings | Settings may hold opt-out or display preference only after approval. | Do not mix settings schema with backend auth/provider config. |
+| UI | UI may show consent, submit, leaderboard, failure, and moderation text. | UI must not write backend directly without the platform boundary. |
+| Platform client | Owns payload validation, provider calls, retries, and provider failure mapping. | Must not change score calculation, physics, spawn logic, upgrades, or renderer. |
+| Build/deploy | Build may inject public provider config if approved. | Never bundle server/admin credentials or moderation secrets. |
+
+Suggested future data flow:
+
+1. `runSettlement` creates a local run result after game over.
+2. UI asks whether the user wants to submit that result.
+3. Consent layer validates display name or anonymous submission.
+4. `leaderboardClient.validateSubmission` creates a narrow payload.
+5. Provider adapter submits the payload and maps success/failure into UI states.
+6. Local high score and meta progression update regardless of network result.
+7. Fetch path reads a limited leaderboard page and treats provider failure as non-fatal.
+
+Future validation matrix:
+
+| Surface | Required Validation Before Shipping |
+| --- | --- |
+| Payload schema | Reject missing score, invalid display name, unknown build/version, impossible score bounds. |
+| Consent | No network write before explicit submit/consent; opt-out suppresses prompts. |
+| Failure mode | Offline/backend failure does not block game over, high score, credits, or settings. |
+| Security/rules | Provider rules reject extra fields, anonymous oversized writes, and unauthorized admin fields. |
+| Abuse | Rate limit/suspicious score behavior is documented and testable. |
+| Production build | No admin credentials, service-account files, emulator endpoints, or debug test hooks bundled. |
+| Rollback | Feature can be hidden and local-only play remains fully functional. |
+
+## Recommendation
+
+Recommended next implementation phase:
+
+- **Phase 7: Local-only leaderboard contract prototype, no backend.**
+- Deliverables: consent copy draft, leaderboard payload schema, pure validation helpers, mocked provider tests, failure-state copy, and an architecture note for the provider adapter.
+- Why: this produces the smallest useful bridge toward global scores without creating credentials, network calls, moderation operations, service-worker risk, native toolchains, or billing exposure.
+
+Alternative A:
+
+- **Backend leaderboard MVP with Firebase after approval.**
+- Deliverables: chosen Firebase product, rules, App Check posture, consent UI, minimal submission/retrieval client, moderation/removal path, quota/billing owner, and rollback switch.
+- Use only if the user explicitly approves provider, public display behavior, privacy copy, moderation owner, and cost ceiling.
+
+Alternative B:
+
+- **PWA manifest-first readiness phase, no offline service worker.**
+- Deliverables: manifest metadata, icon set, install smoke, hosted path verification, and an explicit decision to defer offline caching until CDN assets are vendored or cache strategy is approved.
+- Use if mobile installability is more important than global competition.
+
+Do not recommend native packaging as the immediate next implementation phase. Capacitor/Cordova should wait until either the web/PWA release proves stable on mobile hardware or the user explicitly prioritizes app-store distribution and can approve signing/toolchain/store work.
+
+## User Approval Gates
+
+Before any implementation beyond this dossier, get explicit user/planner approval for:
+
+- Chosen next lane: local-only contract, backend leaderboard, PWA, or native packaging.
+- Backend provider and product if leaderboard is chosen.
+- Public display model: display names, anonymous-only, friends-only, or no public names.
+- Privacy copy and consent surface.
+- Moderation owner, removal/takedown path, and suspicious-score policy.
+- Cost/quota ceiling and who receives billing/alert notifications.
+- Credential owner and storage location outside the repository.
+- Whether App Check or equivalent abuse protection is required for launch.
+- Whether PWA offline caching is allowed, and whether CDN assets must be vendored first.
+- Native platform targets, signing owner, app id, store metadata, and device QA matrix.
+
 ## No-Go Until Decided
 
 Do not implement any of the following until the user/planner explicitly approves the corresponding lane:
@@ -353,11 +441,11 @@ Do not implement any of the following until the user/planner explicitly approves
 - PWA cache strategy, asset vendoring strategy, manifest/icons, or service worker lifecycle.
 - Native package lane, app id, signing credentials, store metadata, or mobile hardware QA matrix.
 
-## Sections To Complete In Later Rounds
+## Dossier Completion Status
 
-- Official platform facts and citations.
-- Privacy/data boundary and consent details.
-- Moderation and abuse model.
-- Future architecture boundary for leaderboard submission/retrieval.
-- Recommended next implementation phase and two alternatives.
-- Final approval gates and validation matrix.
+- Official platform facts and citations: complete for the compared lanes as of 2026-07-01.
+- Privacy/data boundary and consent details: complete for decision-making; legal/privacy copy still needs user approval before implementation.
+- Moderation and abuse model: complete for decision-making; operational owner still needs approval.
+- Future architecture boundary for leaderboard submission/retrieval: complete as documentation-only pseudocode.
+- Recommended next implementation phase and two alternatives: complete.
+- Final approval gates and validation matrix: complete.
