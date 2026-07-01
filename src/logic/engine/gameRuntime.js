@@ -16,6 +16,7 @@ import { createObstacleLayout } from "./level.js";
 import { createMetaProgressionStore, createRunSettlement } from "./metaProgression.js";
 import { createRenderer } from "./renderer.js";
 import { ComboState } from "./scoring.js";
+import { createUpgradeShop } from "../../view/components/upgradeShop.js";
 
 export function createGameRuntime({
   documentRef = document,
@@ -66,6 +67,12 @@ export function createGameRuntime({
     config: config.metaProgression,
   });
   const runSettlement = createRunSettlement(metaStore);
+  createUpgradeShop({
+    documentRef,
+    metaStore,
+    config: config.metaProgression,
+    onChange: (metaState) => hud.updateMeta({ metaState }),
+  });
 
   const effects = {
     audio: audio.sfx,

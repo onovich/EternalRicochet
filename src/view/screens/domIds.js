@@ -16,4 +16,10 @@ export const DOM_IDS = Object.freeze({
   totalCredits: "total-credits",
   startButton: "start-btn",
   restartButton: "restart-btn",
+  upgradesButton: "upgrades-btn",
+  gameOverUpgradesButton: "gameover-upgrades-btn",
+  upgradeMenu: "upgrade-menu",
+  upgradeBalance: "upgrade-balance",
+  upgradeList: "upgrade-list",
+  closeUpgradesButton: "close-upgrades-btn",
 });

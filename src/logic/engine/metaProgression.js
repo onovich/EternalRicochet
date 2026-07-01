@@ -30,6 +30,12 @@ export function getUpgradeCost(upgradeId, state, config = GAME_CONFIG.metaProgre
   return upgrade.baseCost + level * upgrade.costStep;
 }
 
+export function getUpgradeLevel(upgradeId, state, config = GAME_CONFIG.metaProgression) {
+  const upgrade = getUpgradeConfig(upgradeId, config);
+  if (!upgrade) return 0;
+  return clampInteger(state?.upgrades?.[upgradeId], 0, upgrade.maxLevel);
+}
+
 export function sanitizeMetaState(candidate, config = GAME_CONFIG.metaProgression) {
   const defaults = createDefaultMetaState(config);
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
@@ -191,12 +197,6 @@ function getUpgradeEntries(config) {
 
 function getUpgradeConfig(upgradeId, config) {
   return config.upgrades[upgradeId] ?? null;
-}
-
-function getUpgradeLevel(upgradeId, state, config) {
-  const upgrade = getUpgradeConfig(upgradeId, config);
-  if (!upgrade) return 0;
-  return clampInteger(state?.upgrades?.[upgradeId], 0, upgrade.maxLevel);
 }
 
 function clampInteger(value, min, max) {

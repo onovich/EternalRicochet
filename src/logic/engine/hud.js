@@ -50,5 +50,9 @@ export function createHud(documentRef = document) {
     }, 100);
   }
 
-  return { showPlaying, showGameOver, update, pulseScore };
+  function updateMeta({ metaState }) {
+    if (totalCredits) totalCredits.innerText = metaState?.credits ?? 0;
+  }
+
+  return { showPlaying, showGameOver, update, updateMeta, pulseScore };
 }
