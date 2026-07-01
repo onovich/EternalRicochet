@@ -21,7 +21,7 @@ This phase does not add service workers, offline caching, install prompts, backe
 | `package-lock.json` | npm registry metadata URLs | Install metadata. | Keep. They are not runtime app-shell URLs and validation should not scan lockfile metadata for this guard. |
 | Existing docs | Official or planning URLs | Documentation evidence. | Keep. Phase 9 guards target app runtime source and production output, not source citations. |
 
-Production `dist/` currently inherits the Tailwind and Google Fonts references after `npm run build`. The new validation must scan built output after the references are removed.
+At inventory time, production `dist/` inherited the Tailwind and Google Fonts references after `npm run build`. Final Phase 9 validation now scans built output after those references are removed.
 
 ## Tailwind Replacement Strategy
 
@@ -87,6 +87,13 @@ After local CSS replaces the CDN and font link, browser/server smoke should veri
 - Mobile viewport keeps the menu scrollable and safe-area padding intact.
 - Manifest and icon paths remain under `/EternalRicochet/`.
 
-## Round 1 Result
+## Final Status
 
-Round 1 is an inventory and implementation plan only. Runtime behavior remains unchanged until the following rounds replace Tailwind CDN, remove Google Fonts, and add smoke guards.
+Runtime behavior is local-first for app-shell render assets:
+
+- Tailwind CDN script removed from `index.html`.
+- Google Fonts stylesheet removed from `index.html`.
+- Local utility CSS subset added to `src/styles.css`.
+- CSS font stacks use local/system fallbacks with no runtime font fetch.
+- `npm run smoke:assets` is included in `npm run validate` and scans guarded source plus production output for unapproved external runtime URLs.
+- Browser/server smoke evidence is recorded in `docs/phase-9-browser-server-smoke.md`.

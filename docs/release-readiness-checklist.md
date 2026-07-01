@@ -16,6 +16,7 @@ This runs:
 - `npm run check:src`
 - `npm run smoke:logic`
 - `npm run build`
+- `npm run smoke:assets`
 - `npm run smoke:release`
 - `npm run smoke:pwa`
 
@@ -40,8 +41,15 @@ Create a fresh production build:
 
 ```powershell
 npm run build
+npm run smoke:assets
 npm run smoke:release
 ```
+
+The asset locality smoke verifies:
+
+- `index.html`, `src/**/*.js`, `src/**/*.css`, manifest metadata, local SVG icons, `dist/index.html`, and built JS/CSS assets contain no unapproved external runtime HTTP(S) URLs.
+- Tailwind CDN, Google Fonts CSS, and Google Fonts binary host regressions fail validation.
+- The SVG namespace `http://www.w3.org/2000/svg` is treated as metadata, not as a network dependency.
 
 The release smoke verifies:
 
@@ -69,7 +77,7 @@ The PWA smoke verifies:
 - Production `dist/` output contains the manifest and icon assets after `npm run build`.
 - No service-worker registration, Cache API usage, offline fallback, push notification, background sync, backend/provider SDK, native packaging, or offline claim is introduced by the manifest surface.
 
-External Tailwind and Google Fonts CDN references remain network resources. They are not cached or vendored by Phase 8, and offline behavior remains future scope.
+Tailwind and Google Fonts runtime CDN references were removed in Phase 9. Offline behavior remains future scope because no service worker, Cache API usage, offline fallback, or precache strategy has been added.
 
 Optional local production preview:
 

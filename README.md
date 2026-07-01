@@ -10,7 +10,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 6 completion evidence is recorded in `docs/phase-6-validation-report.md`; the project now has a decision-ready platform/social dossier for local-only, backend leaderboard, PWA, and native packaging lanes, with user approval gates before any integration.
 - Phase 7 completion evidence is recorded in `docs/phase-7-validation-report.md`; the project now has a local-only leaderboard contract prototype with pure helpers, mocked provider behavior, consent/failure copy, smoke coverage, and no backend/network integration.
 - Phase 8 completion evidence is recorded in `docs/phase-8-validation-report.md`; the project now has manifest-first PWA readiness with local icons and smoke checks, while service-worker/offline behavior remains deferred.
-- Phase 9 planning is recorded in `docs/phase-9-external-asset-locality-goal-mode-execution-guide.md`; the next slice removes runtime external render asset dependencies before any future offline/cache work.
+- Phase 9 completion evidence is recorded in `docs/phase-9-validation-report.md`; runtime Tailwind CDN and Google Fonts references have been removed, local utility CSS now covers the app shell, and `npm run validate` guards against unapproved external app-shell URLs.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
@@ -67,7 +67,8 @@ git@github.com:onovich/EternalRicochet.git
 
 ## Validation
 
-- `npm run validate` runs source checks, logic smoke, production build, release gate smoke, and PWA manifest smoke.
+- `npm run validate` runs source checks, logic smoke, production build, asset locality smoke, release gate smoke, and PWA manifest smoke.
+- `npm run smoke:assets` checks guarded runtime source and production output for unapproved external app-shell URLs, including Tailwind CDN and Google Fonts regressions.
 - `npm run smoke:release` checks production asset pathing, manifest asset emission, and verifies dev debug hooks are not exposed in the production bundle.
 - `npm run smoke:pwa` checks manifest metadata, local icon assets, hosted `/EternalRicochet/` paths, production `dist/` output, and the no-service-worker/no-offline boundary.
 
