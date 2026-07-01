@@ -8,6 +8,7 @@ import {
   resolveProjectileObstacleCollision,
   resolveProjectileWallCollision,
 } from "../src/logic/engine/collisions.js";
+import { resolveDevStressSeed } from "../src/logic/engine/devStress.js";
 import { Bullet, Enemy, EnemyProjectile, Player } from "../src/logic/engine/entities.js";
 import { createObstacleLayout, isPointSafeFromObstacles } from "../src/logic/engine/level.js";
 import {
@@ -382,6 +383,21 @@ function smokePerformanceMetricsAggregation() {
   assert.equal(state.qualityTier, "low");
 }
 
+function smokeDevStressSeedResolution() {
+  assert.equal(resolveDevStressSeed({ enabled: false, search: "?erStress=1" }).enabled, false);
+  assert.equal(resolveDevStressSeed({ enabled: true, search: "?credits=1" }).enabled, false);
+
+  const seed = resolveDevStressSeed({
+    enabled: true,
+    search: "?erStress=1&erStressEnemies=999&erStressProjectiles=7&erStressParticles=bad",
+  });
+
+  assert.equal(seed.enabled, true);
+  assert.equal(seed.enemies, GAME_CONFIG.performance.stressSeed.maxEnemies);
+  assert.equal(seed.projectiles, 7);
+  assert.equal(seed.particles, 0);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -409,6 +425,7 @@ smokeMetaProgressionRunSettlement();
 smokeMetaProgressionUpgradeEffects();
 smokeRenderQualityResolution();
 smokePerformanceMetricsAggregation();
+smokeDevStressSeedResolution();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",

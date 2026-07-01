@@ -149,6 +149,14 @@ export const GAME_CONFIG = Object.freeze({
   },
   performance: {
     metricsSampleSize: 120,
+    stressSeed: {
+      enemies: 24,
+      projectiles: 18,
+      particles: 240,
+      maxEnemies: 40,
+      maxProjectiles: 40,
+      maxParticles: 420,
+    },
   },
   renderQuality: {
     defaultTier: "high",

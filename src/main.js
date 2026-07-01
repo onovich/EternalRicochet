@@ -15,7 +15,7 @@ runWhenDomReady(() => {
       config: GAME_CONFIG.metaProgression,
     });
   }
-  const runtime = createGameRuntime();
+  const runtime = createGameRuntime({ devMode: import.meta.env.DEV });
   if (import.meta.env.DEV) {
     const debugStateElement = document.createElement("script");
     debugStateElement.id = "eternal-ricochet-debug-state";

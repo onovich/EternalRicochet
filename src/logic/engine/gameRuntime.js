@@ -9,6 +9,7 @@ import {
   resolveProjectileObstacleCollision,
   resolveProjectileWallCollision,
 } from "./collisions.js";
+import { resolveDevStressSeed } from "./devStress.js";
 import { Bullet, Enemy, EnemyProjectile, Particle, Player } from "./entities.js";
 import { createHud } from "./hud.js";
 import { createInputController } from "./input.js";
@@ -30,6 +31,7 @@ export function createGameRuntime({
   documentRef = document,
   windowRef = window,
   config = GAME_CONFIG,
+  devMode = false,
 } = {}) {
   const canvas = documentRef.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
@@ -56,6 +58,11 @@ export function createGameRuntime({
   const renderQuality = resolveRenderQuality({
     search: windowRef.location?.search ?? "",
     config: config.renderQuality,
+  });
+  const devStressSeed = resolveDevStressSeed({
+    enabled: devMode,
+    search: windowRef.location?.search ?? "",
+    config: config.performance.stressSeed,
   });
   const performanceMetrics = createPerformanceMetrics({
     sampleSize: config.performance.metricsSampleSize,
@@ -122,6 +129,7 @@ export function createGameRuntime({
     spawnTimer = 0;
     currentSpawnInterval = config.enemy.baseSpawnInterval;
     shooterIntroduced = false;
+    applyDevStressSeed();
     runSettlement.reset();
     lastSettlement = null;
     input.resetTransient();
@@ -320,6 +328,41 @@ export function createGameRuntime({
     addScreenShake(config.feedback.shooterFireShake);
   }
 
+  function applyDevStressSeed() {
+    if (!devStressSeed.enabled) return;
+
+    const bounds = getBounds();
+    const centerX = bounds.width / 2;
+    const centerY = bounds.height / 2;
+    const enemyRadius = Math.max(180, Math.min(bounds.width, bounds.height) * 0.32);
+    for (let i = 0; i < devStressSeed.enemies; i += 1) {
+      const angle = (i / Math.max(1, devStressSeed.enemies)) * Math.PI * 2;
+      const type = i % 5 === 0 ? "shooter" : i % 3 === 0 ? "tank" : "chaser";
+      const enemy = new Enemy(
+        centerX + Math.cos(angle) * enemyRadius,
+        centerY + Math.sin(angle) * enemyRadius,
+        type,
+        config.enemy,
+      );
+      if (enemy.type === "shooter") {
+        enemy.fireCooldown = 0;
+        shooterIntroduced = true;
+      }
+      enemies.push(enemy);
+    }
+
+    for (let i = 0; i < devStressSeed.projectiles; i += 1) {
+      const angle = (i / Math.max(1, devStressSeed.projectiles)) * Math.PI * 2;
+      const origin = {
+        x: centerX + Math.cos(angle) * (enemyRadius * 0.75),
+        y: centerY + Math.sin(angle) * (enemyRadius * 0.75),
+      };
+      projectiles.push(new EnemyProjectile(origin, player, -1, config.enemyProjectile));
+    }
+
+    createParticles(centerX, centerY, devStressSeed.particles, config.player.color);
+  }
+
   function updateProjectiles() {
     for (let i = projectiles.length - 1; i >= 0; i -= 1) {
       const projectile = projectiles[i];
@@ -426,6 +469,7 @@ export function createGameRuntime({
       settlement: lastSettlement,
       performance: performanceMetrics.getState(),
       renderQuality,
+      devStress: devStressSeed,
       runConfig: {
         playerHp: runConfig.player.hp,
         bulletRecallForce: runConfig.bullet.recallForce,
