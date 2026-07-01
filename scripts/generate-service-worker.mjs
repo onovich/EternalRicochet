@@ -90,9 +90,7 @@ const PRECACHE_PATHS = new Set(PRECACHE_URLS.map((url) => new URL(url, self.loca
 const APP_SHELL_FALLBACK = ${JSON.stringify(`${hostedBase}index.html`)};
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)),
-  );
+  event.waitUntil(precacheAppShell());
 });
 
 self.addEventListener("activate", (event) => {
@@ -133,23 +131,24 @@ self.addEventListener("fetch", (event) => {
 });
 
 async function cacheFirst(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request, { ignoreSearch: true });
+  let cache = await caches.open(CACHE_NAME);
+  let cached = await cache.match(request, { ignoreSearch: true });
   if (cached) return cached;
 
-  const response = await fetch(request);
-  if (response.ok) {
-    await cache.put(request, response.clone());
+  cache = await precacheAppShell();
+  cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) {
+    return cached;
   }
-  return response;
+
+  return fetch(request);
 }
 
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      await cache.put(APP_SHELL_FALLBACK, response.clone());
+      await precacheAppShell();
     }
     return response;
   } catch (error) {
@@ -157,6 +156,12 @@ async function networkFirstNavigation(request) {
     if (cached) return cached;
     throw error;
   }
+}
+
+async function precacheAppShell() {
+  const cache = await caches.open(CACHE_NAME);
+  await cache.addAll(PRECACHE_URLS);
+  return cache;
 }
 
 function isAppShellNavigation(request, url) {
