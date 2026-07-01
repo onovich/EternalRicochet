@@ -1,4 +1,11 @@
-body, html {
+:root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+        }
+
+        body, html {
             margin: 0;
             padding: 0;
             width: 100%;
@@ -9,6 +16,63 @@ body, html {
             overflow: hidden;
             touch-action: none; /* Prevent browser handling of touch gestures like zoom/swipe */
             user-select: none;
+        }
+
+        #game-wrapper {
+            min-height: 100dvh;
+        }
+
+        #hud {
+            padding-top: max(1rem, var(--safe-top));
+            padding-right: max(1rem, var(--safe-right));
+            padding-bottom: 1rem;
+            padding-left: max(1rem, var(--safe-left));
+        }
+
+        #ui-layer {
+            padding-top: max(1rem, var(--safe-top));
+            padding-right: max(1rem, var(--safe-right));
+            padding-bottom: max(1rem, var(--safe-bottom));
+            padding-left: max(1rem, var(--safe-left));
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        #main-menu,
+        #game-over-menu,
+        #upgrade-menu,
+        #settings-menu {
+            max-height: calc(100dvh - max(1rem, var(--safe-top)) - max(1rem, var(--safe-bottom)) - 1rem);
+            overflow-y: auto;
+        }
+
+        @media (max-height: 640px) {
+            #main-menu,
+            #game-over-menu,
+            #upgrade-menu,
+            #settings-menu {
+                padding: 1rem;
+            }
+
+            #main-menu h1,
+            #game-over-menu h2 {
+                margin-top: 0;
+                font-size: clamp(2rem, 9vh, 3rem);
+            }
+        }
+
+        @media (max-width: 480px) {
+            #hud {
+                gap: 0.75rem;
+            }
+
+            #health-bar {
+                font-size: 1.25rem;
+            }
+
+            #score-container {
+                font-size: 2rem;
+            }
         }
 
         /* 赛博朋克 CRT 屏幕扫描线特效 */
