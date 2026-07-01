@@ -27,6 +27,7 @@ import { createRenderer } from "./renderer.js";
 import { resolveRenderQuality } from "./renderQuality.js";
 import { ComboState } from "./scoring.js";
 import { createSettingsStore } from "./settings.js";
+import { createSettingsPanel } from "../../view/components/settingsPanel.js";
 import { createUpgradeShop } from "../../view/components/upgradeShop.js";
 
 export function createGameRuntime({
@@ -37,6 +38,7 @@ export function createGameRuntime({
 } = {}) {
   const canvas = documentRef.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
+  const wrapperElement = documentRef.getElementById("game-wrapper");
 
   let gameState = "MENU";
   let runConfig = config;
@@ -112,6 +114,11 @@ export function createGameRuntime({
     metaStore,
     config: config.metaProgression,
     onChange: (metaState) => hud.updateMeta({ metaState }),
+  });
+  createSettingsPanel({
+    documentRef,
+    settingsStore,
+    wrapperElement,
   });
 
   const effects = {
