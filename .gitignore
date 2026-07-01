@@ -9,3 +9,4 @@ Thumbs.db
 .vite/
 .idea/
 .vscode/
+.codex/project-ops-devserver.pid

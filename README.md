@@ -8,9 +8,10 @@ The project has been initialized as a Vite-powered static web app for local deve
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
-- The gameplay loop has been moved into `src/logic/engine/legacyGame.js` as a preserved engine baseline.<br/>**游戏主循环已迁入 `src/logic/engine/legacyGame.js`，作为保留行为的引擎基线。**
-- `src/data`, `src/logic/hooks`, `src/view/screens`, and `src/view/components` provide the first migration boundaries, but the game logic is not yet fully decomposed into small engine modules.<br/>**`src/data`、`src/logic/hooks`、`src/view/screens` 和 `src/view/components` 已建立第一层迁移边界，但游戏逻辑尚未完全拆成细粒度引擎模块。**
-- The active refactor and ricochet-feel execution guide is `docs/maintenance-physics-p1-goal-mode-execution-guide.md`.<br/>**当前重构与回弹手感执行指南为 `docs/maintenance-physics-p1-goal-mode-execution-guide.md`。**
+- The gameplay runtime now starts through `createGameRuntime` in `src/logic/engine/gameRuntime.js`; `src/logic/engine/legacyGame.js` remains as a compatibility facade.<br/>**游戏运行时现在通过 `src/logic/engine/gameRuntime.js` 中的 `createGameRuntime` 启动；`src/logic/engine/legacyGame.js` 保留为兼容入口。**
+- Core responsibilities are split across named modules for config, vector math, input, audio, HUD, entities, collisions, rendering, and runtime orchestration.<br/>**核心职责已拆分到配置、向量数学、输入、音频、HUD、实体、碰撞、渲染和运行时组织模块。**
+- Bullet firing now resets position, velocity, recall state, trail history, and enemy-hit cooldowns through `Bullet.fireFrom`; wall and enemy rebound behavior is config-driven.<br/>**子弹发射现在通过 `Bullet.fireFrom` 重置位置、速度、召回状态、轨迹和敌人命中冷却；墙面和敌人反弹行为由配置控制。**
+- Phase 1 completion evidence is recorded in `docs/phase-1-validation-report.md`.<br/>**Phase 1 完成证据已记录在 `docs/phase-1-validation-report.md`。**
 
 ## Run Locally
 
@@ -59,5 +60,7 @@ git@github.com:onovich/EternalRicochet.git
 ## Validation
 
 - `npm install` completed successfully with no reported vulnerabilities.<br/>**`npm install` 已成功完成，未报告漏洞。**
+- `npm run check:src` checks every JavaScript source and script file.<br/>**`npm run check:src` 会检查所有 JavaScript 源码和脚本文件。**
+- `npm run smoke:logic` covers bullet fire reset, wall rebound, enemy rebound, and enemy-hit cooldown behavior.<br/>**`npm run smoke:logic` 覆盖子弹发射重置、墙面反弹、敌人反弹和敌人命中冷却。**
 - `npm run build` completed successfully and generated `dist/index.html` plus bundled assets.<br/>**`npm run build` 已成功完成，并生成 `dist/index.html` 及打包资源。**
-- Browser smoke testing confirmed the menu, restart flow, HUD, canvas rendering, and no browser console errors on the local dev server.<br/>**浏览器 smoke 测试已确认菜单、重启流程、HUD、Canvas 渲染正常，本地开发服务器无浏览器控制台错误。**
+- Browser smoke testing confirmed menu/start, HUD, canvas rendering, quick click shooting, Space recall/collect, and no page console errors on the local dev server.<br/>**浏览器 smoke 测试已确认菜单启动、HUD、Canvas 渲染、快速点击射击、Space 召回/拾取，本地开发服务器页面控制台无错误。**
