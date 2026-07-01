@@ -25,6 +25,7 @@ import {
   seedMetaStateFromSearch,
   writeHighScore,
 } from "../src/logic/engine/metaProgression.js";
+import { createParticlePool } from "../src/logic/engine/particlePool.js";
 import { createPerformanceMetrics } from "../src/logic/engine/performanceMetrics.js";
 import { resolveRenderQuality } from "../src/logic/engine/renderQuality.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
@@ -398,6 +399,31 @@ function smokeDevStressSeedResolution() {
   assert.equal(seed.particles, 0);
 }
 
+function smokeParticlePoolCapacityAndReset() {
+  const pool = createParticlePool({ capacity: 3, config: GAME_CONFIG.particles });
+
+  const firstEmit = pool.emit(10, 12, 5, "#ffffff");
+  assert.deepEqual(firstEmit, { emitted: 3, dropped: 2 });
+  assert.equal(pool.active.length, 3);
+  assert.equal(pool.getStats().created, 3);
+  assert.equal(pool.getStats().dropped, 2);
+
+  pool.active[0].life = 0;
+  pool.update();
+  assert.equal(pool.active.length, 2);
+  assert.equal(pool.getStats().inactive, 1);
+
+  const secondEmit = pool.emit(30, 40, 1, "#00ffff");
+  assert.deepEqual(secondEmit, { emitted: 1, dropped: 0 });
+  assert.equal(pool.active.length, 3);
+  assert.equal(pool.getStats().created, 3);
+  assert.equal(pool.active.some((particle) => particle.x === 30 && particle.y === 40), true);
+
+  pool.reset();
+  assert.equal(pool.active.length, 0);
+  assert.equal(pool.getStats().inactive, 3);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -426,6 +452,7 @@ smokeMetaProgressionUpgradeEffects();
 smokeRenderQualityResolution();
 smokePerformanceMetricsAggregation();
 smokeDevStressSeedResolution();
+smokeParticlePoolCapacityAndReset();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter lifecycle, meta progression, performance metrics.",

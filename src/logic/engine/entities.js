@@ -282,6 +282,11 @@ export class EnemyProjectile {
 
 export class Particle {
   constructor(x, y, color, config = GAME_CONFIG.particles) {
+    this.active = false;
+    this.reset(x, y, color, config);
+  }
+
+  reset(x, y, color, config = this.config) {
     this.config = config;
     this.x = x;
     this.y = y;
@@ -293,13 +298,16 @@ export class Particle {
     this.life = 1;
     this.decay = Math.random() * config.decayVariance + config.minDecay;
     this.size = Math.random() * config.sizeVariance + config.minSize;
+    this.active = true;
   }
 
   update() {
+    if (!this.active) return;
     this.x += this.vx;
     this.y += this.vy;
     this.vx *= this.config.friction;
     this.vy *= this.config.friction;
     this.life -= this.decay;
+    if (this.life <= 0) this.active = false;
   }
 }

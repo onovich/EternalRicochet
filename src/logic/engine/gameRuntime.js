@@ -10,7 +10,7 @@ import {
   resolveProjectileWallCollision,
 } from "./collisions.js";
 import { resolveDevStressSeed } from "./devStress.js";
-import { Bullet, Enemy, EnemyProjectile, Particle, Player } from "./entities.js";
+import { Bullet, Enemy, EnemyProjectile, Player } from "./entities.js";
 import { createHud } from "./hud.js";
 import { createInputController } from "./input.js";
 import { createObstacleLayout } from "./level.js";
@@ -21,6 +21,7 @@ import {
   readHighScore,
   writeHighScore,
 } from "./metaProgression.js";
+import { createParticlePool } from "./particlePool.js";
 import { createPerformanceMetrics } from "./performanceMetrics.js";
 import { createRenderer } from "./renderer.js";
 import { resolveRenderQuality } from "./renderQuality.js";
@@ -48,7 +49,6 @@ export function createGameRuntime({
   let enemies = [];
   let obstacles = [];
   let projectiles = [];
-  let particles = [];
   let spawnTimer = 0;
   let currentSpawnInterval = config.enemy.baseSpawnInterval;
   const combo = new ComboState(config.combo);
@@ -68,6 +68,11 @@ export function createGameRuntime({
     sampleSize: config.performance.metricsSampleSize,
     now: () => windowRef.performance?.now?.() ?? Date.now(),
   });
+  const particlePool = createParticlePool({
+    capacity: renderQuality.profile.particleCap,
+    config: config.particles,
+  });
+  const particles = particlePool.active;
 
   function getBounds() {
     return { width: canvas.width, height: canvas.height };
@@ -120,7 +125,7 @@ export function createGameRuntime({
     enemies = [];
     obstacles = createObstacleLayout(getBounds(), config.obstacles);
     projectiles = [];
-    particles = [];
+    particlePool.reset();
     combo.reset();
     score = 0;
     frameCount = 0;
@@ -221,9 +226,7 @@ export function createGameRuntime({
   }
 
   function createParticles(x, y, count, color) {
-    for (let i = 0; i < count; i += 1) {
-      particles.push(new Particle(x, y, color, config.particles));
-    }
+    particlePool.emit(x, y, count, color);
   }
 
   function fireIfRequested() {
@@ -389,10 +392,7 @@ export function createGameRuntime({
   }
 
   function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i -= 1) {
-      particles[i].update();
-      if (particles[i].life <= 0) particles.splice(i, 1);
-    }
+    particlePool.update();
   }
 
   function gameLoop() {
@@ -470,6 +470,7 @@ export function createGameRuntime({
       performance: performanceMetrics.getState(),
       renderQuality,
       devStress: devStressSeed,
+      particlePool: particlePool.getStats(),
       runConfig: {
         playerHp: runConfig.player.hp,
         bulletRecallForce: runConfig.bullet.recallForce,
