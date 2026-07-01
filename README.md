@@ -13,6 +13,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 9 completion evidence is recorded in `docs/phase-9-validation-report.md`; runtime Tailwind CDN and Google Fonts references have been removed, local utility CSS now covers the app shell, and `npm run validate` guards against unapproved external app-shell URLs.
 - Phase 10 completion evidence is recorded in `docs/phase-10-validation-report.md`; the project now has an offline-cache strategy and dry-run readiness validation without registering a service worker or claiming offline support.
 - Phase 11 completion evidence is recorded in `docs/phase-11-validation-report.md`; the project now has an offline UX/service-worker approval gate, future copy/stale-client/rollback/browser validation docs, and `npm run smoke:offline-gate` before any service-worker implementation.
+- Phase 12 execution is planned in `docs/phase-12-service-worker-offline-runtime-goal-mode-execution-guide.md`; it is the first phase allowed to add production service-worker runtime, with app-shell-only caching and strict browser/rollback evidence gates.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
