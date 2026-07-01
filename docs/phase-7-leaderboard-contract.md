@@ -1,7 +1,7 @@
 # Phase 7 Local Leaderboard Contract
 
 Date: 2026-07-01
-Status: draft for local-only prototype
+Status: implemented local-only prototype
 Scope: local contract, pure helpers, and local mock provider only
 
 ## Goal
@@ -15,18 +15,18 @@ The current game remains local-first:
 - Settings are stored under `eternalRicochetSettings`.
 - Phase 7 must not upload, serialize, or couple any of those stores to a leaderboard payload.
 
-## Planned Module Placement
+## Module Placement
 
-Provider-agnostic helpers will live under:
+Provider-agnostic helpers live under:
 
 ```text
 src/logic/leaderboard/
 ```
 
-Planned files:
+Implemented files:
 
 - `contract.js`: pure constants, display-name sanitization, payload validation, entry normalization, and error helpers.
-- `mockProvider.js`: in-memory/local mocked provider that consumes `contract.js` and simulates approved states.
+- `mockProvider.js`: in-memory local mocked provider that consumes `contract.js` and simulates approved states.
 - `copy.js`: deterministic consent and failure-state copy constants.
 
 These modules must not import gameplay runtime, renderer, physics, HUD, audio, settings, meta progression, storage, DOM, network APIs, or provider SDKs.
@@ -117,6 +117,42 @@ Required future UI/copy before any backend submission:
 - Explain failure behavior: local high score and credits remain intact.
 - Explain moderation/removal path before public names are accepted.
 
+## Implemented Helper Boundary
+
+`src/logic/leaderboard/contract.js` exports:
+
+- `LEADERBOARD_CONTRACT`, with contract version `leaderboard-contract-v1`, score era `local-v1`, provider mode `local-mock`, max score, text limits, and anonymous label.
+- `LEADERBOARD_ERROR_CODES`, with validation, forbidden-field, and suspicious-score warning codes.
+- `LEADERBOARD_FORBIDDEN_FIELDS`, listing local data and tracking/credential fields that must not enter payloads.
+- `sanitizeDisplayName`, `validateLeaderboardPayload`, `normalizeLeaderboardEntry`, and `createLeaderboardError`.
+
+The helper module is deterministic and does not import DOM, storage, network, renderer, physics, runtime, settings, meta progression, or high score modules.
+
+## Implemented Mock Provider Boundary
+
+`src/logic/leaderboard/mockProvider.js` exports:
+
+- `LOCAL_LEADERBOARD_PROVIDER_MODES`: `enabled`, `disabled`, `consent-required`, `unavailable`, and `rejected`.
+- `LOCAL_LEADERBOARD_PROVIDER_CODES`: `success`, `disabled`, `consent-required`, `unavailable`, `validation-failed`, `duplicate-client-nonce`, and `rejected`.
+- `createLocalLeaderboardProvider`, an in-memory mock with `submit`, `getEntries`, `setMode`, `getMode`, and `reset`.
+
+The mock provider validates payloads through `contract.js`, sorts accepted local entries by score, rejects duplicate accepted `clientNonce` values, supports seeded entries for smoke tests, and never persists public leaderboard data.
+
+## Consent And Failure Copy
+
+`src/logic/leaderboard/copy.js` exports deterministic copy for:
+
+- Local-only prototype state.
+- Future consent requirement.
+- Public display warning.
+- Disabled state.
+- Unavailable state.
+- Validation failure.
+- Duplicate/rejected state.
+- Privacy boundary.
+
+No live public submission UI was added in Phase 7.
+
 ## Failure States
 
 The local mock provider must support these states with stable result codes:
@@ -128,8 +164,18 @@ The local mock provider must support these states with stable result codes:
 | `consent-required` | Submission attempted without consent. |
 | `validation-failed` | Payload failed contract validation. |
 | `rejected` | Provider policy rejected a valid-shaped payload. |
-| `duplicate` | `clientNonce` was already accepted by the local mock. |
+| `duplicate-client-nonce` | `clientNonce` was already accepted by the local mock. |
 | `unavailable` | Provider is unavailable; local game state must continue. |
+
+## Smoke Coverage
+
+`npm run smoke:logic` covers:
+
+- Display-name sanitization, empty names, overlong names, integer score requirements, max score, invalid timestamps, invalid run durations, invalid client nonce, forbidden fields, stale/unsupported contract identifiers, and suspicious-score warnings.
+- Normalized display entries and anonymous fallback labels.
+- Mock provider success, disabled, consent-required, unavailable, rejected, validation-failed, duplicate nonce, seeded entries, capacity trimming, reset, and no-network/static boundary checks.
+- Copy key stability and local-only/privacy/failure message coverage.
+- Separation from runtime, settings, meta progression, local high score storage, provider SDKs, service workers, and network APIs.
 
 ## Future Implementation Notes
 
