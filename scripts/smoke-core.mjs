@@ -38,8 +38,10 @@ import {
   sanitizeSettings,
 } from "../src/logic/engine/settings.js";
 import {
+  createLeaderboardError,
   LEADERBOARD_CONTRACT,
   LEADERBOARD_ERROR_CODES,
+  LEADERBOARD_FORBIDDEN_FIELDS,
   normalizeLeaderboardEntry,
   sanitizeDisplayName,
   validateLeaderboardPayload,
@@ -715,6 +717,78 @@ function smokeLeaderboardContractValidation() {
   );
 }
 
+function smokeLeaderboardContractBoundaries() {
+  assert.equal(LEADERBOARD_FORBIDDEN_FIELDS.includes("localStorage"), true);
+  assert.equal(LEADERBOARD_FORBIDDEN_FIELDS.includes("upgrades"), true);
+  assert.equal(LEADERBOARD_FORBIDDEN_FIELDS.includes("deviceId"), true);
+  assert.deepEqual(
+    createLeaderboardError(LEADERBOARD_ERROR_CODES.INVALID_SCORE, "Bad score.", "score"),
+    { code: LEADERBOARD_ERROR_CODES.INVALID_SCORE, message: "Bad score.", field: "score" },
+  );
+
+  const nonObject = validateLeaderboardPayload(null);
+  assert.equal(nonObject.valid, false);
+  assert.equal(nonObject.errors[0].code, LEADERBOARD_ERROR_CODES.INVALID_PAYLOAD);
+
+  const omittedTimestamp = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ submittedAt: undefined }),
+  );
+  assert.equal(omittedTimestamp.valid, true);
+  assert.equal(omittedTimestamp.payload.submittedAt, "1970-01-01T00:00:00.000Z");
+
+  const invalidTimestamp = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ submittedAt: "not-a-date" }),
+  );
+  assert.equal(invalidTimestamp.valid, false);
+  assert.equal(
+    invalidTimestamp.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_TIMESTAMP),
+    true,
+  );
+
+  const maxScore = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ score: LEADERBOARD_CONTRACT.maxScore }),
+  );
+  assert.equal(maxScore.valid, true);
+
+  const tooLargeScore = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ score: LEADERBOARD_CONTRACT.maxScore + 1 }),
+  );
+  assert.equal(tooLargeScore.valid, false);
+  assert.equal(
+    tooLargeScore.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_SCORE),
+    true,
+  );
+
+  const fractionalDuration = validateLeaderboardPayload(
+    createValidLeaderboardPayload({ runDurationFrames: 12.5 }),
+  );
+  assert.equal(fractionalDuration.valid, false);
+  assert.equal(
+    fractionalDuration.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_RUN_DURATION),
+    true,
+  );
+
+  const emptyNonce = validateLeaderboardPayload(createValidLeaderboardPayload({ clientNonce: " \n " }));
+  assert.equal(emptyNonce.valid, false);
+  assert.equal(
+    emptyNonce.errors.some((error) => error.code === LEADERBOARD_ERROR_CODES.INVALID_CLIENT_NONCE),
+    true,
+  );
+
+  const longText = "x".repeat(LEADERBOARD_CONTRACT.maxTextFieldLength + 20);
+  const longFields = validateLeaderboardPayload(
+    createValidLeaderboardPayload({
+      gameVersion: longText,
+      buildId: longText,
+      clientNonce: longText,
+    }),
+  );
+  assert.equal(longFields.valid, true);
+  assert.equal(longFields.payload.gameVersion.length, LEADERBOARD_CONTRACT.maxTextFieldLength);
+  assert.equal(longFields.payload.buildId.length, LEADERBOARD_CONTRACT.maxTextFieldLength);
+  assert.equal(longFields.payload.clientNonce.length, LEADERBOARD_CONTRACT.maxTextFieldLength);
+}
+
 function smokeLeaderboardEntryNormalization() {
   const named = normalizeLeaderboardEntry(createValidLeaderboardPayload(), { rank: 2.8 });
 
@@ -841,6 +915,7 @@ smokeRendererProjectileTrailQualitySwitch();
 smokeSettingsPersistence();
 smokeAudioMutePreference();
 smokeLeaderboardContractValidation();
+smokeLeaderboardContractBoundaries();
 smokeLeaderboardEntryNormalization();
 
 console.log(

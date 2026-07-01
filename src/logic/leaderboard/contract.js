@@ -24,7 +24,7 @@ export const LEADERBOARD_ERROR_CODES = Object.freeze({
   SUSPICIOUS_SCORE: "suspicious-score",
 });
 
-const FORBIDDEN_FIELDS = Object.freeze([
+export const LEADERBOARD_FORBIDDEN_FIELDS = Object.freeze([
   "localStorage",
   "settings",
   "meta",
@@ -82,7 +82,7 @@ export function validateLeaderboardPayload(payload, {
     };
   }
 
-  for (const field of FORBIDDEN_FIELDS) {
+  for (const field of LEADERBOARD_FORBIDDEN_FIELDS) {
     if (Object.prototype.hasOwnProperty.call(payload, field)) {
       errors.push(
         createLeaderboardError(
@@ -175,8 +175,10 @@ export function validateLeaderboardPayload(payload, {
   const runDurationFrames =
     payload.runDurationFrames === undefined ? null : toInteger(payload.runDurationFrames);
   if (
-    runDurationFrames !== null &&
-    (runDurationFrames < 0 || runDurationFrames > contract.maxRunDurationFrames)
+    payload.runDurationFrames !== undefined &&
+    (runDurationFrames === null ||
+      runDurationFrames < 0 ||
+      runDurationFrames > contract.maxRunDurationFrames)
   ) {
     errors.push(
       createLeaderboardError(
