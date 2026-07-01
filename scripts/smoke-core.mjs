@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { GAME_CONFIG } from "../src/data/gameConfig.js";
-import { resolveBulletEnemyCollision, resolveBulletWallBounce } from "../src/logic/engine/collisions.js";
-import { Bullet, Enemy } from "../src/logic/engine/entities.js";
+import {
+  resolveBulletEnemyCollision,
+  resolveBulletObstacleCollision,
+  resolveBulletWallBounce,
+  resolvePlayerProjectileCollision,
+  resolveProjectileObstacleCollision,
+  resolveProjectileWallCollision,
+} from "../src/logic/engine/collisions.js";
+import { Bullet, Enemy, EnemyProjectile, Player } from "../src/logic/engine/entities.js";
+import { createObstacleLayout, isPointSafeFromObstacles } from "../src/logic/engine/level.js";
+import { ComboState } from "../src/logic/engine/scoring.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
 
 const effects = {
@@ -81,8 +90,94 @@ function smokeEnemyReboundAndCooldown() {
   assert.equal(tank.hp, hpAfterFirstHit);
 }
 
+function smokeComboScoring() {
+  const combo = new ComboState(GAME_CONFIG.combo);
+
+  const first = combo.recordKill(10);
+  const second = combo.recordKill(10);
+
+  assert.equal(first.points, 10);
+  assert.equal(first.multiplier, 1);
+  assert.equal(second.points, 20);
+  assert.equal(second.multiplier, 2);
+  assert.deepEqual(combo.getHudState(), { killCount: 2, multiplier: 2, visible: true });
+
+  combo.reset();
+  assert.deepEqual(combo.getHudState(), { killCount: 0, multiplier: 1, visible: false });
+}
+
+function smokeObstacleLayoutAndBounce() {
+  const bounds = { width: 960, height: 540 };
+  const obstacles = createObstacleLayout(bounds);
+
+  assert.equal(obstacles.length, GAME_CONFIG.obstacles.count);
+  assert.equal(
+    isPointSafeFromObstacles(
+      { x: bounds.width / 2, y: bounds.height / 2 },
+      GAME_CONFIG.player.radius,
+      obstacles,
+      GAME_CONFIG.obstacles.playerSafeRadius - GAME_CONFIG.player.radius,
+    ),
+    true,
+  );
+
+  const obstacle = obstacles[0];
+  const bullet = new Bullet();
+  bullet.fireFrom({ x: obstacle.x - obstacle.radius - GAME_CONFIG.bullet.radius + 2, y: obstacle.y }, 0);
+  bullet.vx = 12;
+  bullet.vy = 0;
+
+  const result = resolveBulletObstacleCollision({ bullet, obstacle });
+
+  assert.equal(result.bounced, true);
+  assert.ok(bullet.vx < 0);
+  assert.ok(magnitude({ x: bullet.vx, y: bullet.vy }) >= GAME_CONFIG.obstacles.minBounceSpeed);
+}
+
+function smokeShooterProjectileLifecycle() {
+  const bounds = { width: 420, height: 260 };
+  const shooter = new Enemy(80, 130, "shooter");
+  const player = new Player(bounds);
+  player.x = 220;
+  player.y = 130;
+
+  assert.equal(shooter.type, "shooter");
+  shooter.fireCooldown = 0;
+  assert.equal(shooter.canShoot(), true);
+
+  const projectile = new EnemyProjectile(shooter, player, shooter.id);
+  projectile.update();
+  assert.equal(projectile.active, true);
+  assert.ok(projectile.x > shooter.x);
+
+  projectile.x = bounds.width - projectile.radius + 2;
+  projectile.y = 130;
+  projectile.vx = 8;
+  projectile.vy = 0;
+  const wallHit = resolveProjectileWallCollision(projectile, bounds);
+  assert.equal(wallHit.bounced, true);
+  assert.equal(projectile.active, true);
+
+  const [obstacle] = createObstacleLayout(bounds);
+  projectile.x = obstacle.x;
+  projectile.y = obstacle.y;
+  const obstacleHit = resolveProjectileObstacleCollision(projectile, obstacle);
+  assert.equal(obstacleHit.hit, true);
+  assert.equal(projectile.active, false);
+
+  const hitProjectile = new EnemyProjectile({ x: player.x - 20, y: player.y }, player, shooter.id);
+  hitProjectile.x = player.x;
+  hitProjectile.y = player.y;
+  const playerHit = resolvePlayerProjectileCollision({ player, projectile: hitProjectile, effects });
+  assert.equal(playerHit.hit, true);
+  assert.equal(player.hp, GAME_CONFIG.player.hp - 1);
+}
+
 smokeBulletFireReset();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
+smokeComboScoring();
+smokeObstacleLayoutAndBounce();
+smokeShooterProjectileLifecycle();
 
-console.log("Core smoke passed: fire reset, wall rebound, enemy rebound, cooldown.");
+console.log("Core smoke passed: phase 1 regressions, combo, obstacles, shooter projectile lifecycle.");

@@ -1,10 +1,20 @@
 import { GAME_CONFIG } from "../../data/gameConfig.js";
 import { createAudioSystem } from "./audio.js";
-import { resolveBulletEnemyCollision, resolvePlayerEnemyCollision } from "./collisions.js";
-import { Bullet, Enemy, Particle, Player } from "./entities.js";
+import {
+  resolveBulletEnemyCollision,
+  resolveBulletObstacleCollision,
+  resolveCircleObstacleSeparation,
+  resolvePlayerEnemyCollision,
+  resolvePlayerProjectileCollision,
+  resolveProjectileObstacleCollision,
+  resolveProjectileWallCollision,
+} from "./collisions.js";
+import { Bullet, Enemy, EnemyProjectile, Particle, Player } from "./entities.js";
 import { createHud } from "./hud.js";
 import { createInputController } from "./input.js";
+import { createObstacleLayout } from "./level.js";
 import { createRenderer } from "./renderer.js";
+import { ComboState } from "./scoring.js";
 
 export function createGameRuntime({
   documentRef = document,
@@ -23,9 +33,12 @@ export function createGameRuntime({
   let player = null;
   let bullet = new Bullet(config.bullet);
   let enemies = [];
+  let obstacles = [];
+  let projectiles = [];
   let particles = [];
   let spawnTimer = 0;
   let currentSpawnInterval = config.enemy.baseSpawnInterval;
+  const combo = new ComboState(config.combo);
   let started = false;
 
   function getBounds() {
@@ -65,7 +78,10 @@ export function createGameRuntime({
     player = new Player(getBounds(), config.player);
     bullet = new Bullet(config.bullet);
     enemies = [];
+    obstacles = createObstacleLayout(getBounds(), config.obstacles);
+    projectiles = [];
     particles = [];
+    combo.reset();
     score = 0;
     frameCount = 0;
     shakeTime = 0;
@@ -81,6 +97,8 @@ export function createGameRuntime({
 
   function endGame() {
     gameState = "GAMEOVER";
+    combo.reset();
+    projectiles = [];
     if (score > highScore) {
       highScore = score;
       windowRef.localStorage.setItem("eternalRicochetHighScore", String(highScore));
@@ -108,11 +126,25 @@ export function createGameRuntime({
       y = Math.random() * canvas.height;
     }
 
+    const shooterProbability =
+      frameCount >= config.enemy.shooter.spawnStartFrame
+        ? Math.min(
+            config.enemy.shooter.maxProbability,
+            frameCount / config.enemy.shooter.probabilityFrameDivisor,
+          )
+        : 0;
     const tankProbability = Math.min(
       config.enemy.tankMaxProbability,
       frameCount / config.enemy.tankProbabilityFrameDivisor,
     );
-    enemies.push(new Enemy(x, y, Math.random() < tankProbability ? "tank" : "chaser", config.enemy));
+    const roll = Math.random();
+    let type = "chaser";
+    if (roll < shooterProbability) {
+      type = "shooter";
+    } else if (roll < shooterProbability + tankProbability) {
+      type = "tank";
+    }
+    enemies.push(new Enemy(x, y, type, config.enemy));
   }
 
   function updateHud() {
@@ -121,11 +153,13 @@ export function createGameRuntime({
       maxHp: player.maxHp,
       bulletActive: bullet.active,
       scoreValue: score,
+      combo: combo.getHudState(),
     });
   }
 
   function addScore(points) {
-    score += points;
+    const comboResult = combo.recordKill(points);
+    score += comboResult.points;
     updateHud();
     hud.pulseScore();
   }
@@ -145,6 +179,7 @@ export function createGameRuntime({
     if (angle === null) return;
 
     bullet.fireFrom({ x: player.x, y: player.y }, angle);
+    combo.reset();
     player.applyShotRecoil(angle);
     input.clearRecallLatch();
     audio.sfx.shoot();
@@ -163,6 +198,7 @@ export function createGameRuntime({
         addScreenShake(config.feedback.wallBounceShake);
       }
       if (event.type === "collect") {
+        combo.reset();
         input.clearRecallLatch();
         audio.sfx.collect();
         createParticles(player.x, player.y, 8, bullet.color);
@@ -179,6 +215,9 @@ export function createGameRuntime({
 
     frameCount += 1;
     player.update({ moveVector: input.getMoveVector(), bounds: getBounds() });
+    for (const obstacle of obstacles) {
+      resolveCircleObstacleSeparation(player, obstacle);
+    }
     fireIfRequested();
     handleBulletEvents(
       bullet.update({
@@ -187,10 +226,14 @@ export function createGameRuntime({
         bounds: getBounds(),
       }),
     );
+    handleBulletObstacleCollisions();
 
     for (let i = enemies.length - 1; i >= 0; i -= 1) {
       const enemy = enemies[i];
       enemy.update(player);
+      for (const obstacle of obstacles) {
+        resolveCircleObstacleSeparation(enemy, obstacle, config.obstacles.enemySeparationPadding);
+      }
       const playerCollision = resolvePlayerEnemyCollision({ player, enemy, effects });
       if (playerCollision.playerKilled) {
         updateHud();
@@ -199,8 +242,10 @@ export function createGameRuntime({
       }
       resolveBulletEnemyCollision({ bullet, enemy, effects, config });
       if (!enemy.active) enemies.splice(i, 1);
+      else if (enemy.canShoot()) spawnEnemyProjectile(enemy);
     }
 
+    updateProjectiles();
     updateParticles();
     spawnTimer += 1;
     if (spawnTimer >= currentSpawnInterval) {
@@ -212,6 +257,41 @@ export function createGameRuntime({
     }
 
     updateHud();
+  }
+
+  function handleBulletObstacleCollisions() {
+    for (const obstacle of obstacles) {
+      const result = resolveBulletObstacleCollision({ bullet, obstacle, config });
+      if (result.bounced) {
+        audio.sfx.bounce();
+        createParticles(bullet.x, bullet.y, 6, obstacle.color);
+        addScreenShake(config.feedback.obstacleBounceShake);
+      }
+    }
+  }
+
+  function spawnEnemyProjectile(enemy) {
+    projectiles.push(new EnemyProjectile({ x: enemy.x, y: enemy.y }, player, enemy.id, config.enemyProjectile));
+    enemy.resetShotCooldown();
+    addScreenShake(config.feedback.shooterFireShake);
+  }
+
+  function updateProjectiles() {
+    for (let i = projectiles.length - 1; i >= 0; i -= 1) {
+      const projectile = projectiles[i];
+      projectile.update();
+      resolveProjectileWallCollision(projectile, getBounds(), config.enemyProjectile);
+      for (const obstacle of obstacles) {
+        resolveProjectileObstacleCollision(projectile, obstacle, config.enemyProjectile);
+      }
+      const projectileHit = resolvePlayerProjectileCollision({ player, projectile, effects, config });
+      if (projectileHit.playerKilled) {
+        updateHud();
+        endGame();
+        return;
+      }
+      if (!projectile.active) projectiles.splice(i, 1);
+    }
   }
 
   function updateMenuParticles() {
@@ -237,7 +317,17 @@ export function createGameRuntime({
       updateMenuParticles();
     }
 
-    renderer.render({ gameState, player, bullet, enemies, particles, frameCount, shakeTime });
+    renderer.render({
+      gameState,
+      player,
+      bullet,
+      enemies,
+      obstacles,
+      projectiles,
+      particles,
+      frameCount,
+      shakeTime,
+    });
     if (shakeTime > 0 && freezeFrames <= 0) shakeTime -= 1;
   }
 
@@ -261,8 +351,10 @@ export function createGameRuntime({
       player,
       bullet,
       enemies,
+      obstacles,
+      projectiles,
       particles,
+      combo: combo.getHudState(),
     }),
   };
 }
-

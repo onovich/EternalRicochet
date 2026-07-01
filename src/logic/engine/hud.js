@@ -7,6 +7,7 @@ export function createHud(documentRef = document) {
   const highScore = documentRef.getElementById("high-score");
   const healthBar = documentRef.getElementById("health-bar");
   const ammoDisplay = documentRef.getElementById("ammo-display");
+  const comboDisplay = documentRef.getElementById("combo-display");
   const score = documentRef.getElementById("score");
   const scoreContainer = documentRef.getElementById("score-container");
 
@@ -25,12 +26,16 @@ export function createHud(documentRef = document) {
     hud.classList.add("hidden");
   }
 
-  function update({ hp, maxHp, bulletActive, scoreValue }) {
+  function update({ hp, maxHp, bulletActive, scoreValue, combo }) {
     healthBar.innerHTML = Array.from({ length: maxHp }, (_, index) => {
       const className = index < hp ? "" : ' class="text-gray-700"';
       return `<span${className}>\u2665</span>`;
     }).join("");
     ammoDisplay.innerText = bulletActive ? "0" : "1";
+    if (comboDisplay) {
+      comboDisplay.innerText = combo?.visible ? `COMBO X${combo.multiplier} / ${combo.killCount}` : "";
+      comboDisplay.classList.toggle("hidden", !combo?.visible);
+    }
     score.innerText = scoreValue;
   }
 
@@ -43,4 +48,3 @@ export function createHud(documentRef = document) {
 
   return { showPlaying, showGameOver, update, pulseScore };
 }
-

@@ -1,7 +1,7 @@
 import { GAME_CONFIG } from "../../data/gameConfig.js";
 
 export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
-  function render({ gameState, player, bullet, enemies, particles, frameCount, shakeTime }) {
+  function render({ gameState, player, bullet, enemies, obstacles, projectiles, particles, frameCount, shakeTime }) {
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = config.canvas.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -11,8 +11,10 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     drawGrid(player);
 
     ctx.globalCompositeOperation = "lighter";
+    obstacles.forEach(drawObstacle);
     particles.forEach(drawParticle);
     if (gameState === "PLAYING") {
+      projectiles.forEach(drawProjectile);
       drawBullet(bullet);
       enemies.forEach((enemy) => drawEnemy(enemy, player));
       drawPlayer(player, bullet, frameCount);
@@ -52,6 +54,39 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
     ctx.fillStyle = particle.color;
     ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
     ctx.globalAlpha = 1;
+  }
+
+  function drawObstacle(obstacle) {
+    ctx.save();
+    ctx.translate(obstacle.x, obstacle.y);
+    ctx.beginPath();
+    ctx.arc(0, 0, obstacle.radius, 0, Math.PI * 2);
+    ctx.fillStyle = obstacle.coreColor;
+    ctx.strokeStyle = obstacle.color;
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = obstacle.color;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, obstacle.radius * 0.45, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawProjectile(projectile) {
+    if (!projectile.active) return;
+
+    ctx.beginPath();
+    ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
+    ctx.fillStyle = projectile.color;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = projectile.color;
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   function drawBullet(bullet) {
@@ -98,6 +133,11 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
           enemy.radius * Math.sin((i * Math.PI) / 3),
         );
       }
+    } else if (enemy.type === "shooter") {
+      ctx.moveTo(enemy.radius, 0);
+      ctx.lineTo(-enemy.radius * 0.7, -enemy.radius * 0.75);
+      ctx.lineTo(-enemy.radius * 0.25, 0);
+      ctx.lineTo(-enemy.radius * 0.7, enemy.radius * 0.75);
     } else {
       ctx.moveTo(enemy.radius, 0);
       ctx.lineTo(-enemy.radius, -enemy.radius * 0.8);
@@ -204,4 +244,3 @@ export function createRenderer({ canvas, ctx, input, config = GAME_CONFIG }) {
 
   return { render };
 }
-

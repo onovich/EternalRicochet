@@ -181,7 +181,7 @@ export class Bullet {
 
 export class Enemy {
   constructor(x, y, type, config = GAME_CONFIG.enemy) {
-    const typeConfig = type === "tank" ? config.tank : config.chaser;
+    const typeConfig = config[type] ?? config.chaser;
     this.id = nextEnemyId;
     nextEnemyId += 1;
     this.x = x;
@@ -193,21 +193,90 @@ export class Enemy {
     this.hp = typeConfig.hp;
     this.color = typeConfig.color;
     this.scoreVal = typeConfig.score;
+    this.minRange = typeConfig.minRange ?? 0;
+    this.preferredRange = typeConfig.preferredRange ?? 0;
+    this.fireIntervalFrames = typeConfig.fireIntervalFrames ?? 0;
+    this.fireCooldown = typeConfig.initialFireDelayFrames ?? typeConfig.fireIntervalFrames ?? 0;
+    this.strafeDirection = Math.random() < 0.5 ? -1 : 1;
   }
 
   update(player) {
     const dx = player.x - this.x;
     const dy = player.y - this.y;
     const dist = Math.hypot(dx, dy);
-    if (dist > 0) {
-      this.x += (dx / dist) * this.speed;
-      this.y += (dy / dist) * this.speed;
+    if (dist <= 0) return;
+
+    if (this.type === "shooter") {
+      if (dist > this.preferredRange) {
+        this.x += (dx / dist) * this.speed;
+        this.y += (dy / dist) * this.speed;
+      } else if (dist < this.minRange) {
+        this.x -= (dx / dist) * this.speed;
+        this.y -= (dy / dist) * this.speed;
+      } else {
+        this.x += (-dy / dist) * this.speed * 0.35 * this.strafeDirection;
+        this.y += (dx / dist) * this.speed * 0.35 * this.strafeDirection;
+      }
+
+      if (this.fireCooldown > 0) this.fireCooldown -= 1;
+      return;
     }
+
+    this.x += (dx / dist) * this.speed;
+    this.y += (dy / dist) * this.speed;
+  }
+
+  canShoot() {
+    return this.type === "shooter" && this.fireCooldown <= 0;
+  }
+
+  resetShotCooldown() {
+    this.fireCooldown = this.fireIntervalFrames;
   }
 
   takeDamage() {
     this.hp -= 1;
     return this.hp <= 0;
+  }
+}
+
+export class Obstacle {
+  constructor(x, y, radius, index, config = GAME_CONFIG.obstacles) {
+    this.id = `obstacle-${index}`;
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = config.color;
+    this.coreColor = config.coreColor;
+    this.restitution = config.restitution;
+    this.minBounceSpeed = config.minBounceSpeed;
+  }
+}
+
+export class EnemyProjectile {
+  constructor(origin, target, ownerId, config = GAME_CONFIG.enemyProjectile) {
+    const dx = target.x - origin.x;
+    const dy = target.y - origin.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    this.active = true;
+    this.ownerId = ownerId;
+    this.x = origin.x;
+    this.y = origin.y;
+    this.radius = config.radius;
+    this.vx = (dx / dist) * config.speed;
+    this.vy = (dy / dist) * config.speed;
+    this.life = config.lifeFrames;
+    this.color = config.color;
+    this.wallBounces = 0;
+    this.config = config;
+  }
+
+  update() {
+    if (!this.active) return;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= 1;
+    if (this.life <= 0) this.active = false;
   }
 }
 

@@ -4,6 +4,7 @@ export const DOM_IDS = Object.freeze({
   hud: "hud",
   healthBar: "health-bar",
   ammoDisplay: "ammo-display",
+  comboDisplay: "combo-display",
   score: "score",
   scoreContainer: "score-container",
   uiLayer: "ui-layer",

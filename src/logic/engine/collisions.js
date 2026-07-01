@@ -72,6 +72,52 @@ export function resolvePlayerEnemyCollision({ player, enemy, effects }) {
   return { collided: true, playerKilled: hitResult.killed };
 }
 
+export function resolveCircleObstacleSeparation(entity, obstacle, padding = 0) {
+  const minDistance = entity.radius + obstacle.radius + padding;
+  const dx = entity.x - obstacle.x;
+  const dy = entity.y - obstacle.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist >= minDistance) {
+    return { separated: false };
+  }
+
+  const normal = normalize({ x: dx, y: dy }, { x: 1, y: 0 });
+  const push = minDistance - dist;
+  entity.x += normal.x * push;
+  entity.y += normal.y * push;
+  return { separated: true, normal };
+}
+
+export function resolveBulletObstacleCollision({ bullet, obstacle, config = GAME_CONFIG }) {
+  if (!bullet.active) return { bounced: false };
+
+  const minDistance = bullet.radius + obstacle.radius;
+  if (distance(bullet, obstacle) >= minDistance) {
+    return { bounced: false };
+  }
+
+  const normal = normalize(
+    { x: bullet.x - obstacle.x, y: bullet.y - obstacle.y },
+    velocityFallbackNormal({ x: bullet.vx, y: bullet.vy }),
+  );
+  const reflected = reflectVelocity(
+    { x: bullet.vx, y: bullet.vy },
+    normal,
+    obstacle.restitution ?? config.obstacles.restitution,
+  );
+  const clamped = clampMagnitude(
+    reflected,
+    obstacle.minBounceSpeed ?? config.obstacles.minBounceSpeed,
+    config.bullet.maxBounceSpeed,
+  );
+
+  bullet.vx = clamped.x;
+  bullet.vy = clamped.y;
+  bullet.x = obstacle.x + normal.x * minDistance;
+  bullet.y = obstacle.y + normal.y * minDistance;
+  return { bounced: true };
+}
+
 export function resolveBulletEnemyCollision({ bullet, enemy, effects, config = GAME_CONFIG }) {
   if (!bullet.active || !enemy.active) return { hit: false, killed: false };
 
@@ -112,6 +158,86 @@ export function resolveBulletEnemyCollision({ bullet, enemy, effects, config = G
   effects.addScreenShake(config.feedback.enemyHitShake);
   effects.freezeFrames(config.feedback.enemyHitFreezeFrames);
   return { hit: true, killed: false };
+}
+
+export function resolveProjectileWallCollision(projectile, bounds, config = GAME_CONFIG.enemyProjectile) {
+  if (!projectile.active) return { bounced: false, destroyed: false };
+
+  let bounced = false;
+  if (projectile.x < projectile.radius) {
+    projectile.x = projectile.radius;
+    projectile.vx = Math.abs(projectile.vx);
+    bounced = true;
+  }
+  if (projectile.x > bounds.width - projectile.radius) {
+    projectile.x = bounds.width - projectile.radius;
+    projectile.vx = -Math.abs(projectile.vx);
+    bounced = true;
+  }
+  if (projectile.y < projectile.radius) {
+    projectile.y = projectile.radius;
+    projectile.vy = Math.abs(projectile.vy);
+    bounced = true;
+  }
+  if (projectile.y > bounds.height - projectile.radius) {
+    projectile.y = bounds.height - projectile.radius;
+    projectile.vy = -Math.abs(projectile.vy);
+    bounced = true;
+  }
+
+  if (!bounced) return { bounced: false, destroyed: false };
+
+  projectile.wallBounces += 1;
+  if (projectile.wallBounces > config.maxWallBounces) {
+    projectile.active = false;
+    return { bounced: true, destroyed: true };
+  }
+
+  projectile.vx *= config.wallRestitution;
+  projectile.vy *= config.wallRestitution;
+  return { bounced: true, destroyed: false };
+}
+
+export function resolveProjectileObstacleCollision(projectile, obstacle, config = GAME_CONFIG.enemyProjectile) {
+  if (!projectile.active) return { hit: false };
+
+  const minDistance = projectile.radius + obstacle.radius;
+  if (distance(projectile, obstacle) >= minDistance) {
+    return { hit: false };
+  }
+
+  if (config.obstacleBehavior === "destroy") {
+    projectile.active = false;
+    return { hit: true, destroyed: true };
+  }
+
+  const normal = normalize(
+    { x: projectile.x - obstacle.x, y: projectile.y - obstacle.y },
+    velocityFallbackNormal({ x: projectile.vx, y: projectile.vy }),
+  );
+  const reflected = reflectVelocity({ x: projectile.vx, y: projectile.vy }, normal, config.wallRestitution);
+  projectile.vx = reflected.x;
+  projectile.vy = reflected.y;
+  projectile.x = obstacle.x + normal.x * minDistance;
+  projectile.y = obstacle.y + normal.y * minDistance;
+  return { hit: true, destroyed: false };
+}
+
+export function resolvePlayerProjectileCollision({ player, projectile, effects, config = GAME_CONFIG }) {
+  if (!projectile.active) return { hit: false, playerKilled: false };
+  if (distance(player, projectile) >= player.radius + projectile.radius) {
+    return { hit: false, playerKilled: false };
+  }
+
+  projectile.active = false;
+  const hitResult = player.hit();
+  if (hitResult.tookDamage) {
+    effects.audio.hit();
+    effects.addScreenShake(config.feedback.projectileHitShake);
+    effects.createParticles(player.x, player.y, 18, player.color);
+    effects.freezeFrames(config.feedback.projectileHitFreezeFrames);
+  }
+  return { hit: true, playerKilled: hitResult.killed };
 }
 
 function reboundBulletFromEnemy(bullet, enemy, config) {
