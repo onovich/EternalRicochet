@@ -176,6 +176,24 @@ export function createEffectiveRunConfig(metaState, baseConfig = GAME_CONFIG) {
   };
 }
 
+export function seedMetaStateFromSearch({
+  storage = DEFAULT_STORAGE,
+  search = "",
+  config = GAME_CONFIG.metaProgression,
+} = {}) {
+  const params = new URLSearchParams(search);
+  if (params.get("erSeedMeta") !== "1") return null;
+
+  const state = createDefaultMetaState(config);
+  state.credits = clampInteger(params.get("credits"), 0, config.maxCredits);
+  state.totalCreditsEarned = state.credits;
+  for (const [id, upgrade] of getUpgradeEntries(config)) {
+    state.upgrades[id] = clampInteger(params.get(id), 0, upgrade.maxLevel);
+  }
+
+  return writeMetaState(storage, state, config);
+}
+
 export function createMetaProgressionStore({
   storage = DEFAULT_STORAGE,
   config = GAME_CONFIG.metaProgression,

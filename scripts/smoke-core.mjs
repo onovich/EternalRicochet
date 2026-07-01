@@ -21,6 +21,7 @@ import {
   readHighScore,
   readMetaState,
   sanitizeMetaState,
+  seedMetaStateFromSearch,
   writeHighScore,
 } from "../src/logic/engine/metaProgression.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
@@ -256,6 +257,22 @@ function smokeMetaProgressionStore() {
   assert.equal(reloaded.upgrades.gravityRecall, 1);
 }
 
+function smokeMetaProgressionDevSeed() {
+  const storage = createMemoryStorage();
+  const seed = seedMetaStateFromSearch({
+    storage,
+    search: "?erSeedMeta=1&credits=40&gravityRecall=1&armorPiercer=2&energyShield=99",
+  });
+  const seededState = readMetaState(storage);
+
+  assert.equal(seed.saved, true);
+  assert.equal(seededState.credits, 40);
+  assert.equal(seededState.upgrades.gravityRecall, 1);
+  assert.equal(seededState.upgrades.armorPiercer, 2);
+  assert.equal(seededState.upgrades.energyShield, GAME_CONFIG.metaProgression.upgrades.energyShield.maxLevel);
+  assert.equal(seedMetaStateFromSearch({ storage, search: "?credits=10" }), null);
+}
+
 function smokeHighScorePersistence() {
   const storage = createMemoryStorage();
 
@@ -343,6 +360,7 @@ smokeShooterProjectileLifecycle();
 smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();
 smokeMetaProgressionStore();
+smokeMetaProgressionDevSeed();
 smokeHighScorePersistence();
 smokeMetaProgressionRunSettlement();
 smokeMetaProgressionUpgradeEffects();
