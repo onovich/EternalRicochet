@@ -73,7 +73,7 @@ const guardedFiles = [...guardedSourceFiles, ...guardedDistFiles].filter(existsS
 assertNoUnapprovedExternalUrls(guardedFiles);
 assertNoServiceWorkerFiles();
 assertNoRuntimeOfflineScope(guardedFiles);
-assertNoServiceWorkerDependencies();
+assertNoDeferredDependencies();
 
 console.log(
   `Offline readiness dry-run passed: ${jsAssets.length} JS, ${cssAssets.length} CSS, manifest, and 2 icon cache candidates inspected without shipping service-worker runtime.`,
@@ -166,14 +166,29 @@ function assertNoRuntimeOfflineScope(files) {
   assert.equal(failures.length, 0, `Offline runtime boundary failed:\n${failures.join("\n")}`);
 }
 
-function assertNoServiceWorkerDependencies() {
+function assertNoDeferredDependencies() {
   const packageJson = readJson(packagePath);
+  assert.equal(packageJson.dependencies, undefined, "Phase 10 must not add runtime dependencies.");
+
+  const devDependencyNames = Object.keys(packageJson.devDependencies ?? {});
+  assert.deepEqual(
+    devDependencyNames,
+    ["vite"],
+    "Phase 10 must keep dev dependencies limited to the existing Vite build tool.",
+  );
+
   const dependencyNames = [
     ...Object.keys(packageJson.dependencies ?? {}),
-    ...Object.keys(packageJson.devDependencies ?? {}),
+    ...devDependencyNames,
   ];
-  const forbiddenDependencies = dependencyNames.filter((name) => /workbox|service-worker|sw-toolbox/i.test(name));
-  assert.deepEqual(forbiddenDependencies, [], "Phase 10 must not add service-worker tooling dependencies.");
+  const forbiddenDependencies = dependencyNames.filter((name) => {
+    return /workbox|service-worker|sw-toolbox|firebase|supabase|capacitor|cordova|electron|analytics/i.test(name);
+  });
+  assert.deepEqual(
+    forbiddenDependencies,
+    [],
+    "Phase 10 must not add service-worker, backend, analytics, or native packaging dependencies.",
+  );
 }
 
 function collectFiles(dir) {
