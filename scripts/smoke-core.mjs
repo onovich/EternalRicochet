@@ -18,8 +18,10 @@ import {
   createMetaProgressionStore,
   createRunSettlement,
   purchaseUpgrade,
+  readHighScore,
   readMetaState,
   sanitizeMetaState,
+  writeHighScore,
 } from "../src/logic/engine/metaProgression.js";
 import { ComboState } from "../src/logic/engine/scoring.js";
 import { magnitude } from "../src/logic/engine/vectorMath.js";
@@ -254,6 +256,22 @@ function smokeMetaProgressionStore() {
   assert.equal(reloaded.upgrades.gravityRecall, 1);
 }
 
+function smokeHighScorePersistence() {
+  const storage = createMemoryStorage();
+
+  assert.equal(readHighScore(storage), 0);
+  storage.setItem(GAME_CONFIG.metaProgression.highScoreKey, "-50");
+  assert.equal(readHighScore(storage), 0);
+  storage.setItem(GAME_CONFIG.metaProgression.highScoreKey, "not-a-score");
+  assert.equal(readHighScore(storage), 0);
+  storage.setItem(GAME_CONFIG.metaProgression.highScoreKey, "2000000000");
+  assert.equal(readHighScore(storage), GAME_CONFIG.metaProgression.maxHighScore);
+
+  const write = writeHighScore(storage, 123);
+  assert.equal(write.saved, true);
+  assert.equal(readHighScore(storage), 123);
+}
+
 function smokeMetaProgressionRunSettlement() {
   const store = createMetaProgressionStore({ storage: createMemoryStorage() });
   const settlement = createRunSettlement(store);
@@ -325,6 +343,7 @@ smokeShooterProjectileLifecycle();
 smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();
 smokeMetaProgressionStore();
+smokeHighScorePersistence();
 smokeMetaProgressionRunSettlement();
 smokeMetaProgressionUpgradeEffects();
 

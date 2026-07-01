@@ -44,9 +44,11 @@ export const GAME_CONFIG = Object.freeze({
   },
   metaProgression: {
     storageKey: "eternalRicochetMeta",
+    highScoreKey: "eternalRicochetHighScore",
     schemaVersion: 1,
     creditsPerScore: 25,
     maxCredits: 999999,
+    maxHighScore: 999999999,
     upgrades: {
       gravityRecall: {
         label: "Gravity Recall",

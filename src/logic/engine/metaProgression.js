@@ -75,6 +75,24 @@ export function readMetaState(storage = DEFAULT_STORAGE, config = GAME_CONFIG.me
   }
 }
 
+export function readHighScore(storage = DEFAULT_STORAGE, config = GAME_CONFIG.metaProgression) {
+  try {
+    return clampInteger(storage.getItem(config.highScoreKey), 0, config.maxHighScore);
+  } catch {
+    return 0;
+  }
+}
+
+export function writeHighScore(storage = DEFAULT_STORAGE, score, config = GAME_CONFIG.metaProgression) {
+  const sanitized = clampInteger(score, 0, config.maxHighScore);
+  try {
+    storage.setItem(config.highScoreKey, String(sanitized));
+  } catch {
+    return { highScore: sanitized, saved: false };
+  }
+  return { highScore: sanitized, saved: true };
+}
+
 export function writeMetaState(storage = DEFAULT_STORAGE, state, config = GAME_CONFIG.metaProgression) {
   const sanitized = sanitizeMetaState(state, config);
   try {

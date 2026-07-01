@@ -17,6 +17,8 @@ import {
   createEffectiveRunConfig,
   createMetaProgressionStore,
   createRunSettlement,
+  readHighScore,
+  writeHighScore,
 } from "./metaProgression.js";
 import { createRenderer } from "./renderer.js";
 import { ComboState } from "./scoring.js";
@@ -33,7 +35,7 @@ export function createGameRuntime({
   let gameState = "MENU";
   let runConfig = config;
   let score = 0;
-  let highScore = Number(windowRef.localStorage.getItem("eternalRicochetHighScore") || 0);
+  let highScore = readHighScore(windowRef.localStorage, config.metaProgression);
   let frameCount = 0;
   let shakeTime = 0;
   let freezeFrames = 0;
@@ -126,7 +128,7 @@ export function createGameRuntime({
     lastSettlement = runSettlement.settleScore(score);
     if (score > highScore) {
       highScore = score;
-      windowRef.localStorage.setItem("eternalRicochetHighScore", String(highScore));
+      writeHighScore(windowRef.localStorage, highScore, config.metaProgression);
     }
     hud.showGameOver({
       scoreValue: score,
