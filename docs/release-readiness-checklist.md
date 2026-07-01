@@ -17,6 +17,7 @@ This runs:
 - `npm run smoke:logic`
 - `npm run build`
 - `npm run smoke:assets`
+- `npm run smoke:offline-readiness`
 - `npm run smoke:release`
 - `npm run smoke:pwa`
 
@@ -42,6 +43,7 @@ Create a fresh production build:
 ```powershell
 npm run build
 npm run smoke:assets
+npm run smoke:offline-readiness
 npm run smoke:release
 ```
 
@@ -50,6 +52,14 @@ The asset locality smoke verifies:
 - `index.html`, `src/**/*.js`, `src/**/*.css`, manifest metadata, local SVG icons, `dist/index.html`, and built JS/CSS assets contain no unapproved external runtime HTTP(S) URLs.
 - Tailwind CDN, Google Fonts CSS, and Google Fonts binary host regressions fail validation.
 - The SVG namespace `http://www.w3.org/2000/svg` is treated as metadata, not as a network dependency.
+
+The offline-readiness dry-run verifies:
+
+- `dist/index.html`, hashed JS/CSS bundles, `dist/manifest.webmanifest`, and both local SVG icons exist after build.
+- Built JS/CSS asset references use the hosted `/EternalRicochet/` path.
+- The production manifest keeps `id`, `start_url`, and `scope` at `/EternalRicochet/`.
+- Source and production output contain no service-worker files, service-worker registration, Cache API runtime usage, Workbox tooling, unapproved external runtime URLs, or offline-support claims.
+- This check is a dry-run only. It does not register a service worker, populate browser caches, or prove offline reload behavior.
 
 The release smoke verifies:
 
@@ -78,6 +88,8 @@ The PWA smoke verifies:
 - No service-worker registration, Cache API usage, offline fallback, push notification, background sync, backend/provider SDK, native packaging, or offline claim is introduced by the manifest surface.
 
 Tailwind and Google Fonts runtime CDN references were removed in Phase 9. Offline behavior remains future scope because no service worker, Cache API usage, offline fallback, or precache strategy has been added.
+
+Phase 10 adds offline-cache strategy and dry-run readiness checks only. Do not describe the release as offline-capable until a later explicit service-worker phase implements and validates first load, cached reload, offline reload, update cleanup, rollback/unregister, and hosted-path parity.
 
 Optional local production preview:
 
