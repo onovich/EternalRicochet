@@ -40,6 +40,7 @@ export function createGameRuntime({
   let currentSpawnInterval = config.enemy.baseSpawnInterval;
   const combo = new ComboState(config.combo);
   let started = false;
+  let shooterIntroduced = false;
 
   function getBounds() {
     return { width: canvas.width, height: canvas.height };
@@ -88,6 +89,7 @@ export function createGameRuntime({
     freezeFrames = 0;
     spawnTimer = 0;
     currentSpawnInterval = config.enemy.baseSpawnInterval;
+    shooterIntroduced = false;
     input.resetTransient();
     hud.showPlaying();
     updateHud();
@@ -139,11 +141,14 @@ export function createGameRuntime({
     );
     const roll = Math.random();
     let type = "chaser";
-    if (roll < shooterProbability) {
+    if (frameCount >= config.enemy.shooter.spawnStartFrame && !shooterIntroduced) {
+      type = "shooter";
+    } else if (roll < shooterProbability) {
       type = "shooter";
     } else if (roll < shooterProbability + tankProbability) {
       type = "tank";
     }
+    if (type === "shooter") shooterIntroduced = true;
     enemies.push(new Enemy(x, y, type, config.enemy));
   }
 
@@ -341,9 +346,45 @@ export function createGameRuntime({
     windowRef.requestAnimationFrame(gameLoop);
   }
 
+  function getDebugState() {
+    return {
+      gameState,
+      score,
+      frameCount,
+      player: player ? { hp: player.hp, x: player.x, y: player.y } : null,
+      bullet: {
+        active: bullet.active,
+        isRecalling: bullet.isRecalling,
+        trailLength: bullet.trail.length,
+      },
+      enemies: enemies.map((enemy) => ({
+        type: enemy.type,
+        hp: enemy.hp,
+        active: enemy.active,
+        x: enemy.x,
+        y: enemy.y,
+        fireCooldown: enemy.fireCooldown,
+      })),
+      obstacles: obstacles.map((obstacle) => ({
+        id: obstacle.id,
+        x: obstacle.x,
+        y: obstacle.y,
+        radius: obstacle.radius,
+      })),
+      projectiles: projectiles.map((projectile) => ({
+        active: projectile.active,
+        x: projectile.x,
+        y: projectile.y,
+        wallBounces: projectile.wallBounces,
+      })),
+      combo: combo.getHudState(),
+    };
+  }
+
   return {
     start,
     initGame,
+    getDebugState,
     getState: () => ({
       gameState,
       score,
