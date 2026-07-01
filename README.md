@@ -10,6 +10,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
 - The gameplay loop has been moved into `src/logic/engine/legacyGame.js` as a preserved engine baseline.<br/>**游戏主循环已迁入 `src/logic/engine/legacyGame.js`，作为保留行为的引擎基线。**
 - `src/data`, `src/logic/hooks`, `src/view/screens`, and `src/view/components` provide the first migration boundaries, but the game logic is not yet fully decomposed into small engine modules.<br/>**`src/data`、`src/logic/hooks`、`src/view/screens` 和 `src/view/components` 已建立第一层迁移边界，但游戏逻辑尚未完全拆成细粒度引擎模块。**
+- The active refactor and ricochet-feel execution guide is `docs/maintenance-physics-p1-goal-mode-execution-guide.md`.<br/>**当前重构与回弹手感执行指南为 `docs/maintenance-physics-p1-goal-mode-execution-guide.md`。**
 
 ## Run Locally
 
