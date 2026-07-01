@@ -119,3 +119,99 @@ No-go for service-worker implementation until all of these are approved in a lat
 - Browser and hosted GitHub Pages validation matrix.
 - User-facing offline/update copy.
 
+## Future Cache Naming And Versioning
+
+A later service-worker phase should use explicit versioned cache names. Do not use a single permanent cache name.
+
+Recommended naming shape:
+
+```text
+eternal-ricochet-app-v<release>
+eternal-ricochet-runtime-v<release>
+```
+
+Initial policy:
+
+- `app` cache: app shell HTML, hashed JS/CSS, manifest, and icons.
+- `runtime` cache: reserved for future approved runtime fetches only; keep empty until there is an explicit use case.
+- Version source: a release/build identifier controlled by the build or release process, not a magic string edited inside gameplay modules.
+- Cache keys: deployed URLs under `/EternalRicochet/`.
+- Cleanup: during activation, delete old `eternal-ricochet-*` cache names that are not in the current allowlist.
+
+Do not cache localStorage values or score/meta/settings snapshots in these caches.
+
+## Future Install And Activate Expectations
+
+Future `install` behavior:
+
+- Open the current versioned app cache.
+- Add the approved build-output asset list.
+- Treat missing required app-shell assets as install failure.
+- Avoid caching dev-only paths, Vite HMR paths, source maps unless explicitly approved, or cross-origin resources.
+- Avoid `skipWaiting()` unless the update UX and stale-client behavior are explicitly designed.
+
+Future `activate` behavior:
+
+- Delete old versioned caches outside the current allowlist.
+- Claim clients only if the refresh/update UX has been tested.
+- Keep local settings, high score, credits, and upgrades untouched.
+- Record activation/update behavior in browser smoke evidence.
+
+Future fetch behavior:
+
+- Hashed JS/CSS/icons can use cache-first by exact URL.
+- HTML should prefer network-first or a short-lived strategy so new releases are discoverable.
+- Backend, analytics, leaderboard, telemetry, moderation, and provider calls must bypass the cache unless a later phase explicitly approves otherwise.
+- Failed network requests must not corrupt local progression.
+
+## Future Update And Stale-Client Plan
+
+Stale cache risk is a release blocker for any future offline-capable phase.
+
+A later implementation should define:
+
+- How the app detects a newly installed worker waiting to activate.
+- Whether users see a refresh prompt, automatic reload, or no UI.
+- How long old tabs may keep the old worker.
+- Whether `skipWaiting()` is safe for this single-screen game.
+- How an interrupted update behaves if a player is mid-run.
+- How a new release invalidates old hashed assets and removes old cache names.
+
+Suggested conservative default:
+
+- Do not interrupt an active run.
+- Surface a simple refresh option only at menu or game-over surfaces.
+- Keep local persistence schema independent from service-worker version.
+
+## Future Rollback Shape
+
+Rollback must be designed before a worker ships because old service workers can continue controlling clients after a broken release.
+
+Minimum rollback procedure for a future service-worker phase:
+
+1. Ship a release that removes or disables service-worker registration.
+2. Serve a replacement/no-op worker only if needed to reach already controlled clients.
+3. In that worker, delete all known `eternal-ricochet-*` cache names during activation.
+4. Call `registration.unregister()` from a deliberate rollback path only after user-impact and browser support are verified.
+5. Keep the hosted web release playable from network assets under `/EternalRicochet/`.
+6. Verify local settings, meta progression, and high score remain intact.
+7. Document how long users may need to refresh or close tabs before the rollback takes effect.
+
+Rollback must not delete localStorage progress unless a separate user-approved migration explicitly requires it.
+
+## Future Go/No-Go Gates For Service Worker
+
+Go only if all are true:
+
+- Build-output asset inventory is deterministic.
+- Cache naming/versioning is approved.
+- Install/activate/fetch/update/rollback behavior is documented.
+- Browser smoke covers first load, cached reload, offline reload, update, cleanup, hard refresh, unregister rollback, and hosted-path parity.
+- User-facing copy avoids claiming offline support until the browser evidence passes.
+
+No-go if any are true:
+
+- Any external runtime dependency returns.
+- Any backend/network feature is introduced without separate consent and cache bypass rules.
+- There is no tested rollback path.
+- Local persistence can be lost or overwritten by service-worker update behavior.
