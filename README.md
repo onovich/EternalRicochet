@@ -7,6 +7,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 ## Status
 
 - Phase 5 completion evidence is recorded in `docs/phase-5-validation-report.md`; the runtime now includes a local settings panel, saved render quality/audio/fullscreen preferences, mobile safe-area polish, and release gate smoke checks.
+- Phase 6 planning is recorded in `docs/phase-6-platform-social-decision-goal-mode-execution-guide.md`; the next slice prepares a decision dossier for leaderboard, PWA, and native packaging choices before any external platform integration.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**
