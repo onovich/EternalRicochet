@@ -58,18 +58,18 @@ export function resolvePlayerEnemyCollision({ player, enemy, effects }) {
   }
 
   const normal = normalize({ x: dx, y: dy }, { x: 1, y: 0 });
-  const playerKilled = player.hit();
+  const hitResult = player.hit();
   enemy.x -= normal.x * 20;
   enemy.y -= normal.y * 20;
 
-  if (playerKilled || player.wasHitThisFrame) {
+  if (hitResult.tookDamage) {
     effects.audio.hit();
     effects.addScreenShake(GAME_CONFIG.feedback.playerHitShake);
     effects.createParticles(player.x, player.y, 20, player.color);
     effects.freezeFrames(GAME_CONFIG.feedback.playerHitFreezeFrames);
   }
 
-  return { collided: true, playerKilled };
+  return { collided: true, playerKilled: hitResult.killed };
 }
 
 export function resolveBulletEnemyCollision({ bullet, enemy, effects, config = GAME_CONFIG }) {
@@ -131,4 +131,3 @@ function reboundBulletFromEnemy(bullet, enemy, config) {
   bullet.x = enemy.x + normal.x * (enemy.radius + bullet.radius + config.enemyHitSeparation);
   bullet.y = enemy.y + normal.y * (enemy.radius + bullet.radius + config.enemyHitSeparation);
 }
-

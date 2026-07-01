@@ -52,12 +52,14 @@ export class Player {
   }
 
   hit() {
-    if (this.invulnTime > 0) return false;
+    if (this.invulnTime > 0) {
+      return { tookDamage: false, killed: false };
+    }
 
     this.hp -= 1;
     this.invulnTime = this.config.invulnFrames;
     this.wasHitThisFrame = true;
-    return this.hp <= 0;
+    return { tookDamage: true, killed: this.hp <= 0 };
   }
 }
 
@@ -232,4 +234,3 @@ export class Particle {
     this.life -= this.decay;
   }
 }
-

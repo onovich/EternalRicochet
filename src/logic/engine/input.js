@@ -14,7 +14,8 @@ export function createInputController({
   const isTouchDevice = "ontouchstart" in windowRef || windowRef.navigator.maxTouchPoints > 0;
   const leftStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, dx: 0, dy: 0 };
   const rightStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, isDragging: false };
-  let mobileRecallTriggered = false;
+  let recallTriggered = false;
+  let pendingMouseShot = false;
   let pendingTouchShotAngle = null;
 
   function setKey(event, value) {
@@ -24,6 +25,7 @@ export function createInputController({
     if (key === "s" || event.key === "ArrowDown") keys.s = value;
     if (key === "d" || event.key === "ArrowRight") keys.d = value;
     if (event.key === " ") keys.space = value;
+    if (event.key === " " && value) recallTriggered = true;
   }
 
   windowRef.addEventListener("keydown", (event) => setKey(event, true));
@@ -33,10 +35,36 @@ export function createInputController({
     mouse.y = event.clientY;
   });
   windowRef.addEventListener("mousedown", (event) => {
-    if (event.button === 0) mouse.leftDown = true;
-    if (event.button === 2) mouse.rightDown = true;
+    if (event.button === 0) {
+      mouse.leftDown = true;
+      pendingMouseShot = true;
+    }
+    if (event.button === 2) {
+      mouse.rightDown = true;
+      recallTriggered = true;
+    }
   });
   windowRef.addEventListener("mouseup", (event) => {
+    if (event.button === 0) mouse.leftDown = false;
+    if (event.button === 2) mouse.rightDown = false;
+  });
+  windowRef.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") return;
+    mouse.x = event.clientX;
+    mouse.y = event.clientY;
+    if (event.button === 0) {
+      mouse.leftDown = true;
+      pendingMouseShot = true;
+    }
+    if (event.button === 2) {
+      mouse.rightDown = true;
+      recallTriggered = true;
+    }
+  });
+  windowRef.addEventListener("pointerup", (event) => {
+    if (event.pointerType === "touch") return;
+    mouse.x = event.clientX;
+    mouse.y = event.clientY;
     if (event.button === 0) mouse.leftDown = false;
     if (event.button === 2) mouse.rightDown = false;
   });
@@ -105,9 +133,11 @@ export function createInputController({
       if (rightStick.active && touch.identifier === rightStick.id) {
         rightStick.active = false;
         if (rightStick.isDragging) {
-          pendingTouchShotAngle = Math.atan2(rightStick.y - rightStick.oy, rightStick.x - rightStick.ox);
+          if (!getBulletActive()) {
+            pendingTouchShotAngle = Math.atan2(rightStick.y - rightStick.oy, rightStick.x - rightStick.ox);
+          }
         } else {
-          mobileRecallTriggered = true;
+          recallTriggered = true;
         }
       }
     }
@@ -135,7 +165,11 @@ export function createInputController({
   }
 
   function consumeShootAngle(player) {
-    if (getBulletActive()) return null;
+    if (getBulletActive()) {
+      pendingMouseShot = false;
+      pendingTouchShotAngle = null;
+      return null;
+    }
 
     if (pendingTouchShotAngle !== null) {
       const angle = pendingTouchShotAngle;
@@ -143,8 +177,8 @@ export function createInputController({
       return angle;
     }
 
-    if (mouse.leftDown) {
-      mouse.leftDown = false;
+    if (pendingMouseShot) {
+      pendingMouseShot = false;
       return Math.atan2(mouse.y - player.y, mouse.x - player.x);
     }
 
@@ -152,17 +186,18 @@ export function createInputController({
   }
 
   function isRecallRequested() {
-    return keys.space || mouse.rightDown || mobileRecallTriggered;
+    return keys.space || mouse.rightDown || recallTriggered;
   }
 
   function clearRecallLatch() {
-    mobileRecallTriggered = false;
+    recallTriggered = false;
   }
 
   function resetTransient() {
     mouse.leftDown = false;
     mouse.rightDown = false;
-    mobileRecallTriggered = false;
+    recallTriggered = false;
+    pendingMouseShot = false;
     pendingTouchShotAngle = null;
   }
 
@@ -179,4 +214,3 @@ export function createInputController({
     getAimState,
   };
 }
-
