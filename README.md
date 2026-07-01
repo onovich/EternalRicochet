@@ -13,7 +13,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Bullet firing now resets position, velocity, recall state, trail history, and enemy-hit cooldowns through `Bullet.fireFrom`; wall and enemy rebound behavior is config-driven.<br/>**子弹发射现在通过 `Bullet.fireFrom` 重置位置、速度、召回状态、轨迹和敌人命中冷却；墙面和敌人反弹行为由配置控制。**
 - Phase 1 completion evidence is recorded in `docs/phase-1-validation-report.md`.<br/>**Phase 1 完成证据已记录在 `docs/phase-1-validation-report.md`。**
 - Phase 3 completion evidence is recorded in `docs/phase-3-validation-report.md`; local meta progression now covers credits, an upgrade shop, and three persistent upgrades.<br/>**Phase 3 完成证据记录在 `docs/phase-3-validation-report.md`；本地局外养成现在覆盖货币、升级商店和三项持久升级。**
-- Phase 4 planning is recorded in `docs/phase-4-performance-visual-fidelity-goal-mode-execution-guide.md`.<br/>**Phase 4 规划记录在 `docs/phase-4-performance-visual-fidelity-goal-mode-execution-guide.md`。**
+- Phase 4 completion evidence is recorded in `docs/phase-4-validation-report.md`; the runtime now includes dev metrics, a dev stress seed, a particle pool, render quality tiers, and lightweight Shooter projectile trail feedback.<br/>**Phase 4 完成证据记录在 `docs/phase-4-validation-report.md`；运行时现在包含开发指标、开发压力种子、粒子池、渲染质量档位和轻量 Shooter 弹体拖尾反馈。**
 
 ## Run Locally
 
@@ -63,6 +63,6 @@ git@github.com:onovich/EternalRicochet.git
 
 - `npm install` completed successfully with no reported vulnerabilities.<br/>**`npm install` 已成功完成，未报告漏洞。**
 - `npm run check:src` checks every JavaScript source and script file.<br/>**`npm run check:src` 会检查所有 JavaScript 源码和脚本文件。**
-- `npm run smoke:logic` covers bullet fire reset, wall rebound, enemy rebound, and enemy-hit cooldown behavior.<br/>**`npm run smoke:logic` 覆盖子弹发射重置、墙面反弹、敌人反弹和敌人命中冷却。**
+- `npm run smoke:logic` covers bullet fire reset, wall rebound, enemy rebound, combo, obstacles, Shooter projectiles, meta progression, performance metrics, render quality, and particle pooling.<br/>**`npm run smoke:logic` 覆盖子弹发射重置、墙面反弹、敌人反弹、连击、障碍物、Shooter 弹体、局外养成、性能指标、渲染质量和粒子池。**
 - `npm run build` completed successfully and generated `dist/index.html` plus bundled assets.<br/>**`npm run build` 已成功完成，并生成 `dist/index.html` 及打包资源。**
-- Browser smoke testing confirmed menu/start, HUD, canvas rendering, quick click shooting, Space recall/collect, and no page console errors on the local dev server.<br/>**浏览器 smoke 测试已确认菜单启动、HUD、Canvas 渲染、快速点击射击、Space 召回/拾取，本地开发服务器页面控制台无错误。**
+- Browser smoke testing confirmed menu/start, HUD, canvas rendering, click shooting, recall/collect, upgrade shop open/close, low-quality stress metrics, particle cap behavior, and no page console errors on the local dev server.<br/>**浏览器 smoke 测试确认了菜单启动、HUD、Canvas 渲染、点击射击、召回/拾取、升级商店打开关闭、低质量压力指标、粒子上限行为，以及本地开发服务器页面控制台无错误。**
