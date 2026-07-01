@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-service-worker.mjs",
     "check:src": "node scripts/check-src.mjs",
     "smoke:logic": "node scripts/smoke-core.mjs",
     "smoke:assets": "node scripts/smoke-assets.mjs",
