@@ -215,3 +215,60 @@ No-go if any are true:
 - Any backend/network feature is introduced without separate consent and cache bypass rules.
 - There is no tested rollback path.
 - Local persistence can be lost or overwritten by service-worker update behavior.
+
+## Future Service-Worker Validation Matrix
+
+This matrix belongs to a later implementation phase. Phase 10 records it as a go/no-go checklist only.
+
+| Check | Local dev server | Preview server | GitHub Pages hosted | Automation target | Manual/browser evidence |
+| --- | --- | --- | --- | --- | --- |
+| First network load | Required | Required | Required | Verify HTTP 200 for app shell, manifest, icons, JS, CSS. | Page renders menu and no console errors. |
+| Service-worker registration | Later phase only | Later phase only | Later phase only | Verify exactly one intended registration under `/EternalRicochet/`. | Browser Application panel or equivalent confirms scope. |
+| Install cache population | Later phase only | Later phase only | Later phase only | Verify expected cache names and candidate URLs. | DevTools cache inspection screenshot or log. |
+| Cached reload | Later phase only | Later phase only | Later phase only | Reload after install and verify app shell still renders. | Menu/settings/start flow works after reload. |
+| Offline reload | Not reliable with Vite dev HMR | Required | Required | Disable network and reload `/EternalRicochet/`. | App shell loads from cache and clearly communicates offline state if needed. |
+| Update vN to vN+1 | Required with two local builds | Required | Required before release | Build two versions, verify new hashed assets are fetched. | Old tab receives designed refresh behavior. |
+| Old cache cleanup | Required | Required | Required | Verify old `eternal-ricochet-*` caches are removed after activation. | Cache list shows only current allowlist. |
+| Hard refresh | Required | Required | Required | Verify hard refresh does not break registration or asset paths. | Browser still reaches latest hosted release. |
+| Unregister rollback | Required | Required | Required before release | Disable registration, unregister, delete caches, reload. | App remains playable from network assets. |
+| Hosted path parity | Required | Required | Required | Confirm all cached URLs start with `/EternalRicochet/`. | Custom domain and GitHub Pages project path both work. |
+| External asset locality | Required | Required | Required | Reuse `npm run smoke:assets` and `npm run smoke:offline-readiness`. | No unexpected cross-origin requests. |
+| Local settings persistence | Required | Required | Required | Set render quality/audio/fullscreen, update worker, verify unchanged. | Settings panel reflects persisted values. |
+| Meta/high-score persistence | Required | Required | Required | Earn credits/high score, update worker, verify local storage unchanged. | Game-over and upgrade shop still display expected values. |
+| Browser compatibility | Optional | Required | Required | Chromium automated baseline. | Manual Chrome/Edge/Firefox checks; Safari/iOS only when available. |
+| No backend caching | Required if backend exists | Required if backend exists | Required if backend exists | Verify provider/API URLs bypass service-worker cache. | Network panel confirms no stale backend responses. |
+
+## Future Automation Split
+
+Automate first:
+
+- Build-output cache candidate inventory.
+- Hosted path checks.
+- Manifest/icon presence.
+- No external runtime URLs.
+- No service-worker registration until explicitly approved.
+- No Cache API usage until explicitly approved.
+- No Workbox/runtime dependency drift.
+- Production build no debug hooks.
+
+Require browser/manual evidence after a service worker exists:
+
+- Actual service-worker lifecycle state.
+- Offline reload.
+- Cache contents.
+- Update and stale-client behavior.
+- Unregister rollback.
+- Browser-specific install/offline behavior.
+- iOS/Safari behavior if mobile PWA release is in scope.
+
+## Future Test Fixtures
+
+A later implementation can use these deterministic fixtures:
+
+- Build A: baseline release with `CACHE_VERSION = A`.
+- Build B: same app shell with a harmless text/build-id change and `CACHE_VERSION = B`.
+- Local served path: `http://127.0.0.1:4173/EternalRicochet/`.
+- Preview served path: `npm run preview -- --port 4173`.
+- Hosted path: the GitHub Pages project URL or custom domain under `/EternalRicochet/`.
+
+Acceptance must compare Build A and Build B cache state, not just single-version first load.
