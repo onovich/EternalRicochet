@@ -10,9 +10,10 @@
     "smoke:logic": "node scripts/smoke-core.mjs",
     "smoke:assets": "node scripts/smoke-assets.mjs",
     "smoke:offline-readiness": "node scripts/smoke-offline-readiness.mjs",
+    "smoke:offline-gate": "node scripts/smoke-offline-approval-gate.mjs",
     "smoke:pwa": "node scripts/smoke-pwa.mjs",
     "smoke:release": "node scripts/smoke-release-gates.mjs",
-    "validate": "npm run check:src && npm run smoke:logic && npm run build && npm run smoke:assets && npm run smoke:offline-readiness && npm run smoke:release && npm run smoke:pwa",
+    "validate": "npm run check:src && npm run smoke:logic && npm run build && npm run smoke:assets && npm run smoke:offline-readiness && npm run smoke:offline-gate && npm run smoke:release && npm run smoke:pwa",
     "preview": "vite preview --host 127.0.0.1"
   },
   "devDependencies": {
