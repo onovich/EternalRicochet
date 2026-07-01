@@ -12,6 +12,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Core responsibilities are split across named modules for config, vector math, input, audio, HUD, entities, collisions, rendering, and runtime orchestration.<br/>**核心职责已拆分到配置、向量数学、输入、音频、HUD、实体、碰撞、渲染和运行时组织模块。**
 - Bullet firing now resets position, velocity, recall state, trail history, and enemy-hit cooldowns through `Bullet.fireFrom`; wall and enemy rebound behavior is config-driven.<br/>**子弹发射现在通过 `Bullet.fireFrom` 重置位置、速度、召回状态、轨迹和敌人命中冷却；墙面和敌人反弹行为由配置控制。**
 - Phase 1 completion evidence is recorded in `docs/phase-1-validation-report.md`.<br/>**Phase 1 完成证据已记录在 `docs/phase-1-validation-report.md`。**
+- Phase 2 completion evidence is recorded in `docs/phase-2-validation-report.md`; Phase 3 planning is in `docs/phase-3-meta-progression-goal-mode-execution-guide.md`.<br/>**Phase 2 完成证据记录在 `docs/phase-2-validation-report.md`；Phase 3 规划记录在 `docs/phase-3-meta-progression-goal-mode-execution-guide.md`。**
 
 ## Run Locally
 
