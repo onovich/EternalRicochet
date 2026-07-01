@@ -23,8 +23,8 @@ idempotency:
   last_planner_dispatch_status: sent
   last_planner_dispatch_guide: docs/phase-3-meta-progression-goal-mode-execution-guide.md
   last_planner_dispatch_commit: 0062d0b
-  last_executor_report_commit: 2cb52db
+  last_executor_report_commit: 01d1ac5
   last_executor_report_status: READY_FOR_CHECK
-  last_executor_report_at: 2026-07-01T18:02:27.0705373+08:00
-  last_executor_report_guide: docs/phase-2-validation-report.md
+  last_executor_report_at: 2026-07-01T18:28:13.5851556+08:00
+  last_executor_report_guide: docs/phase-3-validation-report.md
   last_check_status: pass
