@@ -98,9 +98,11 @@ The dry-run must fail when:
 - Built asset references do not use `/EternalRicochet/`.
 - Unapproved external runtime URLs appear.
 - Service-worker files appear.
+- Service-worker file references appear in source or built output.
 - Service-worker registration appears in source or production output.
 - Cache API runtime usage appears in source or production output.
 - Workbox or other service-worker tooling appears.
+- Backend/native/analytics/runtime dependency drift appears in `package.json`.
 - Offline support claims appear before the service-worker phase is approved.
 
 The dry-run must pass without modifying gameplay, deployment workflow, runtime dependencies, or generated output tracking.

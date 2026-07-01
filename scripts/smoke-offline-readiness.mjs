@@ -72,6 +72,7 @@ const guardedFiles = [...guardedSourceFiles, ...guardedDistFiles].filter(existsS
 
 assertNoUnapprovedExternalUrls(guardedFiles);
 assertNoServiceWorkerFiles();
+assertNoServiceWorkerReferences(guardedFiles);
 assertNoRuntimeOfflineScope(guardedFiles);
 assertNoDeferredDependencies();
 
@@ -117,7 +118,7 @@ function assertNoUnapprovedExternalUrls(files) {
 }
 
 function assertNoServiceWorkerFiles() {
-  const serviceWorkerFilePattern = /^(sw|service-worker|serviceWorker|workbox)([-_.].*)?\.(js|mjs)$/i;
+  const serviceWorkerFilePattern = /^(sw|service-worker|serviceWorker|workbox)([-_.].*)?\.(js|mjs|cjs|ts|map)$/i;
   const rootLevelFiles = readdirSync(rootDir)
     .map((entry) => join(rootDir, entry))
     .filter((path) => existsSync(path) && !statSync(path).isDirectory());
@@ -136,6 +137,27 @@ function assertNoServiceWorkerFiles() {
   );
 }
 
+function assertNoServiceWorkerReferences(files) {
+  const forbiddenReferencePatterns = [
+    /["'(/]sw\.(js|mjs|cjs|ts|map)\b/i,
+    /service-worker\.(js|mjs|cjs|ts|map)\b/i,
+    /serviceWorker\.(js|mjs|cjs|ts|map)\b/i,
+    /workbox[-_.]/i,
+  ];
+  const failures = [];
+
+  for (const file of files) {
+    const text = readFile(file);
+    for (const pattern of forbiddenReferencePatterns) {
+      if (pattern.test(text)) {
+        failures.push(`${formatPath(file)} includes forbidden service-worker reference ${pattern}`);
+      }
+    }
+  }
+
+  assert.equal(failures.length, 0, `Service-worker reference boundary failed:\n${failures.join("\n")}`);
+}
+
 function assertNoRuntimeOfflineScope(files) {
   const forbiddenPatterns = [
     /\bnavigator\.serviceWorker\b/,
@@ -149,7 +171,10 @@ function assertNoRuntimeOfflineScope(files) {
     /\bworkbox\b/i,
     /offline fallback/i,
     /works offline/i,
+    /available offline/i,
+    /offline ready/i,
     /offline-capable/i,
+    /offline mode/i,
     /offline support/i,
   ];
   const failures = [];
