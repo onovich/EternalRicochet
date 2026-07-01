@@ -42,7 +42,7 @@ structureCheck, build
 
 Start command: `npm run dev -- --port 4173`
 Health URL: `http://127.0.0.1:4173/EternalRicochet/`
-Ready text: `Local:`
+Ready text: `Eternal Ricochet`
 Timeout seconds: 30
 
 ## Safety Policy

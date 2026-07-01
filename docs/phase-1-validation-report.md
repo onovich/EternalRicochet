@@ -26,6 +26,8 @@ Result: PASS
 - `npm run smoke:logic`: PASS
 - `npm run build`: PASS
 - `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\Validate.cmd`: PASS
+- `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\StartDevServer.cmd`: PASS
+- `C:\Users\Administrator\.codex\skills\project-ops-workflow\scripts\ops\StopDevServer.cmd`: PASS
 - `git diff --check`: PASS
 
 ## Browser Smoke

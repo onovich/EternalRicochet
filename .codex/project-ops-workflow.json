@@ -88,7 +88,7 @@
     "devServer":  {
                       "startCommand":  "npm run dev -- --port 4173",
                       "healthUrl":  "http://127.0.0.1:4173/EternalRicochet/",
-                      "readyText":  "Local:",
+                      "readyText":  "Eternal Ricochet",
                       "startupTimeoutSeconds":  30,
                       "pidFile":  ".codex/project-ops-devserver.pid"
                   },
