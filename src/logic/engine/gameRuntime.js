@@ -13,7 +13,11 @@ import { Bullet, Enemy, EnemyProjectile, Particle, Player } from "./entities.js"
 import { createHud } from "./hud.js";
 import { createInputController } from "./input.js";
 import { createObstacleLayout } from "./level.js";
-import { createMetaProgressionStore, createRunSettlement } from "./metaProgression.js";
+import {
+  createEffectiveRunConfig,
+  createMetaProgressionStore,
+  createRunSettlement,
+} from "./metaProgression.js";
 import { createRenderer } from "./renderer.js";
 import { ComboState } from "./scoring.js";
 import { createUpgradeShop } from "../../view/components/upgradeShop.js";
@@ -27,6 +31,7 @@ export function createGameRuntime({
   const ctx = canvas.getContext("2d");
 
   let gameState = "MENU";
+  let runConfig = config;
   let score = 0;
   let highScore = Number(windowRef.localStorage.getItem("eternalRicochetHighScore") || 0);
   let frameCount = 0;
@@ -90,8 +95,9 @@ export function createGameRuntime({
   }
 
   function initGame() {
-    player = new Player(getBounds(), config.player);
-    bullet = new Bullet(config.bullet);
+    runConfig = createEffectiveRunConfig(metaStore.reload(), config);
+    player = new Player(getBounds(), runConfig.player);
+    bullet = new Bullet(runConfig.bullet);
     enemies = [];
     obstacles = createObstacleLayout(getBounds(), config.obstacles);
     projectiles = [];
@@ -266,7 +272,7 @@ export function createGameRuntime({
         endGame();
         return;
       }
-      resolveBulletEnemyCollision({ bullet, enemy, effects, config });
+      resolveBulletEnemyCollision({ bullet, enemy, effects, config: runConfig });
       if (!enemy.active) enemies.splice(i, 1);
       else if (enemy.canShoot()) spawnEnemyProjectile(enemy);
     }
@@ -287,7 +293,7 @@ export function createGameRuntime({
 
   function handleBulletObstacleCollisions() {
     for (const obstacle of obstacles) {
-      const result = resolveBulletObstacleCollision({ bullet, obstacle, config });
+      const result = resolveBulletObstacleCollision({ bullet, obstacle, config: runConfig });
       if (result.bounced) {
         audio.sfx.bounce();
         createParticles(bullet.x, bullet.y, 6, obstacle.color);
@@ -401,6 +407,11 @@ export function createGameRuntime({
       combo: combo.getHudState(),
       meta: metaStore.getState(),
       settlement: lastSettlement,
+      runConfig: {
+        playerHp: runConfig.player.hp,
+        bulletRecallForce: runConfig.bullet.recallForce,
+        bulletKillDamping: runConfig.bullet.killDamping,
+      },
     };
   }
 
@@ -421,6 +432,7 @@ export function createGameRuntime({
       combo: combo.getHudState(),
       meta: metaStore.getState(),
       settlement: lastSettlement,
+      runConfig,
     }),
   };
 }

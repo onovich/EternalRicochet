@@ -14,6 +14,7 @@ import {
   awardCredits,
   calculateCreditsEarned,
   createDefaultMetaState,
+  createEffectiveRunConfig,
   createMetaProgressionStore,
   createRunSettlement,
   purchaseUpgrade,
@@ -272,6 +273,37 @@ function smokeMetaProgressionRunSettlement() {
   assert.equal(store.getState().credits, 11);
 }
 
+function smokeMetaProgressionUpgradeEffects() {
+  const state = sanitizeMetaState({
+    upgrades: {
+      gravityRecall: 2,
+      armorPiercer: 3,
+      energyShield: 1,
+    },
+  });
+  const effective = createEffectiveRunConfig(state);
+
+  assert.equal(
+    effective.bullet.recallForce,
+    GAME_CONFIG.bullet.recallForce +
+      2 * GAME_CONFIG.metaProgression.upgrades.gravityRecall.recallForcePerLevel,
+  );
+  assert.equal(
+    effective.bullet.killDamping,
+    Math.min(
+      GAME_CONFIG.metaProgression.upgrades.armorPiercer.maxKillDamping,
+      GAME_CONFIG.bullet.killDamping +
+        3 * GAME_CONFIG.metaProgression.upgrades.armorPiercer.killDampingBonusPerLevel,
+    ),
+  );
+  assert.equal(
+    effective.player.hp,
+    GAME_CONFIG.player.hp + GAME_CONFIG.metaProgression.upgrades.energyShield.hpPerLevel,
+  );
+  assert.equal(GAME_CONFIG.player.hp, 3);
+  assert.equal(GAME_CONFIG.bullet.recallForce, 2);
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -294,6 +326,7 @@ smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();
 smokeMetaProgressionStore();
 smokeMetaProgressionRunSettlement();
+smokeMetaProgressionUpgradeEffects();
 
 console.log(
   "Core smoke passed: phase 1 regressions, combo, obstacles, shooter projectile lifecycle, meta progression persistence.",

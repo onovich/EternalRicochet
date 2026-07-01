@@ -133,6 +133,31 @@ export function purchaseUpgrade(state, upgradeId, config = GAME_CONFIG.metaProgr
   };
 }
 
+export function createEffectiveRunConfig(metaState, baseConfig = GAME_CONFIG) {
+  const state = sanitizeMetaState(metaState, baseConfig.metaProgression);
+  const upgrades = baseConfig.metaProgression.upgrades;
+  const gravityLevel = getUpgradeLevel("gravityRecall", state, baseConfig.metaProgression);
+  const piercerLevel = getUpgradeLevel("armorPiercer", state, baseConfig.metaProgression);
+  const shieldLevel = getUpgradeLevel("energyShield", state, baseConfig.metaProgression);
+
+  return {
+    ...baseConfig,
+    player: {
+      ...baseConfig.player,
+      hp: baseConfig.player.hp + shieldLevel * upgrades.energyShield.hpPerLevel,
+    },
+    bullet: {
+      ...baseConfig.bullet,
+      recallForce:
+        baseConfig.bullet.recallForce + gravityLevel * upgrades.gravityRecall.recallForcePerLevel,
+      killDamping: Math.min(
+        upgrades.armorPiercer.maxKillDamping,
+        baseConfig.bullet.killDamping + piercerLevel * upgrades.armorPiercer.killDampingBonusPerLevel,
+      ),
+    },
+  };
+}
+
 export function createMetaProgressionStore({
   storage = DEFAULT_STORAGE,
   config = GAME_CONFIG.metaProgression,
