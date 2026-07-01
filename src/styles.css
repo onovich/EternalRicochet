@@ -12,7 +12,7 @@
             height: 100%;
             background-color: #050505;
             color: #ffffff;
-            font-family: 'Noto Sans SC', 'Orbitron', sans-serif;
+            font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
             overflow: hidden;
             touch-action: none; /* Prevent browser handling of touch gestures like zoom/swipe */
             user-select: none;
@@ -343,5 +343,5 @@
         
         /* 定制化字体家族类 */
         .font-cyber {
-            font-family: 'Orbitron', sans-serif;
+            font-family: "Orbitron", "Trebuchet MS", "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
         }
