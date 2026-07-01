@@ -1,27 +1,28 @@
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, join, relative } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const rootDir = process.cwd();
 const gateDocPath = join(rootDir, "docs", "phase-11-offline-ux-approval-gate.md");
-const sourceIndexPath = join(rootDir, "index.html");
-const sourceDir = join(rootDir, "src");
-const publicDir = join(rootDir, "public");
-const distDir = join(rootDir, "dist");
+const runtimeDocPath = join(rootDir, "docs", "phase-12-service-worker-offline-runtime.md");
+const clientPath = join(rootDir, "src", "logic", "offline", "serviceWorkerClient.js");
 const packagePath = join(rootDir, "package.json");
 
 assert.ok(existsSync(gateDocPath), "Phase 11 offline approval gate document must exist.");
+assert.ok(existsSync(runtimeDocPath), "Phase 12 service-worker runtime design document must exist.");
+assert.ok(existsSync(clientPath), "Phase 12 service-worker client must exist.");
 
 const gateDoc = readFile(gateDocPath);
+const runtimeDoc = readFile(runtimeDocPath);
+const clientSource = readFile(clientPath);
 const packageJson = readJson(packagePath);
 
 assertGateDocument();
+assertPhase12Conformance();
 assertValidateWiring();
-assertNoServiceWorkerFiles();
-assertNoOfflineRuntimeScope();
 assertNoDeferredDependencies();
 
-console.log("Offline approval gate smoke passed: Phase 11 UX gate is documented and runtime offline scope remains unshipped.");
+console.log("Offline approval gate smoke passed: Phase 12 service-worker runtime remains inside the approved app-shell gate.");
 
 function assertGateDocument() {
   const requiredSections = [
@@ -71,27 +72,31 @@ function assertGateDocument() {
     "GitHub Pages project path",
     "Custom-domain hosted path",
   ];
-  const requiredOfficialSources = [
-    "https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API",
-    "https://developer.mozilla.org/en-US/docs/Web/API/Cache",
-    "https://developer.mozilla.org/en-US/docs/Web/API/CacheStorage",
-    "https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages",
-  ];
 
   assertIncludesAll(gateDoc, requiredSections, "Phase 11 gate document is missing required section");
   assertIncludesAll(gateDoc, requiredFutureStates, "Phase 11 gate document is missing required future UX state");
   assertIncludesAll(gateDoc, requiredCopy, "Phase 11 gate document is missing required future copy");
   assertIncludesAll(gateDoc, requiredRules, "Phase 11 gate document is missing required stale-client rule");
   assertIncludesAll(gateDoc, requiredBrowsers, "Phase 11 gate document is missing browser validation target");
-  assertIncludesAll(gateDoc, requiredOfficialSources, "Phase 11 gate document is missing official source");
-  assert.ok(
-    gateDoc.includes("Eternal Ricochet remains online-only in Phase 11."),
-    "Gate document must state the current app remains online-only.",
-  );
-  assert.ok(
-    gateDoc.includes("No-go for a service-worker implementation in Phase 11."),
-    "Gate document must explicitly block service-worker implementation in Phase 11.",
-  );
+}
+
+function assertPhase12Conformance() {
+  const requiredRuntimeDocPhrases = [
+    "Phase 12 is the first phase allowed to add service-worker runtime code.",
+    "The Vite production build output is the source of truth for every precached URL.",
+    "Never auto-reload while `gameState === \"PLAYING\"`.",
+    "The service worker must not read, write, cache, migrate, export, or delete:",
+    "Phase 12 validation must include a rollback/unregister smoke using the production preview server.",
+  ];
+  const requiredClientPhrases = [
+    "A new version is ready. Refresh when you are ready.",
+    "A new version is ready after this run.",
+    'gameState === "PLAYING"',
+    "SKIP_WAITING",
+  ];
+
+  assertIncludesAll(runtimeDoc, requiredRuntimeDocPhrases, "Phase 12 runtime doc is missing gate conformance phrase");
+  assertIncludesAll(clientSource, requiredClientPhrases, "Phase 12 client is missing approved update UX behavior");
 }
 
 function assertValidateWiring() {
@@ -100,88 +105,31 @@ function assertValidateWiring() {
     "node scripts/smoke-offline-approval-gate.mjs",
     "package.json must expose npm run smoke:offline-gate.",
   );
+  assert.equal(
+    packageJson.scripts?.["smoke:service-worker"],
+    "node scripts/smoke-service-worker.mjs",
+    "package.json must expose npm run smoke:service-worker.",
+  );
   assert.match(
     packageJson.scripts?.validate ?? "",
     /npm run smoke:offline-gate/,
     "npm run validate must include the offline approval gate smoke.",
   );
-}
-
-function assertNoServiceWorkerFiles() {
-  const serviceWorkerFilePattern = /^(sw|service-worker|serviceWorker|workbox)([-_.].*)?\.(js|mjs|cjs|ts|map|html)$/i;
-  const rootLevelFiles = readdirSync(rootDir)
-    .map((entry) => join(rootDir, entry))
-    .filter((path) => existsSync(path) && !statSync(path).isDirectory());
-  const files = [
-    ...rootLevelFiles,
-    ...collectFiles(publicDir),
-    ...collectFiles(sourceDir),
-    ...collectFiles(distDir),
-  ];
-  const matches = files.filter((file) => serviceWorkerFilePattern.test(basename(file)));
-
-  assert.deepEqual(
-    matches.map(formatPath),
-    [],
-    "Phase 11 must not add service-worker, offline fallback, or Workbox runtime files.",
+  assert.match(
+    packageJson.scripts?.validate ?? "",
+    /npm run smoke:service-worker/,
+    "npm run validate must include the service-worker smoke.",
   );
 }
 
-function assertNoOfflineRuntimeScope() {
-  const guardedFiles = [
-    sourceIndexPath,
-    ...collectFiles(sourceDir).filter(isRuntimeFile),
-    join(publicDir, "manifest.webmanifest"),
-    ...collectFiles(join(publicDir, "icons")).filter((file) => file.endsWith(".svg")),
-    join(distDir, "index.html"),
-    join(distDir, "manifest.webmanifest"),
-    ...collectFiles(join(distDir, "assets")).filter(isRuntimeFile),
-    ...collectFiles(join(distDir, "icons")).filter((file) => file.endsWith(".svg")),
-  ].filter(existsSync);
-
-  const forbiddenPatterns = [
-    /\bnavigator\.serviceWorker\b/,
-    /\bserviceWorker\.register\b/,
-    /\bregistration\.unregister\b/,
-    /\bcaches\./,
-    /\bcaches\.open\b/,
-    /\bCacheStorage\b/,
-    /\bclients\.claim\b/,
-    /\bskipWaiting\b/,
-    /\bimportScripts\s*\(/,
-    /\bworkbox\b/i,
-    /service-worker\.(js|mjs|cjs|ts|map)\b/i,
-    /["'(/]sw\.(js|mjs|cjs|ts|map)\b/i,
-    /offline fallback/i,
-    /works offline/i,
-    /available offline/i,
-    /offline ready/i,
-    /offline-capable/i,
-    /offline mode/i,
-    /offline support/i,
-  ];
-  const failures = [];
-
-  for (const file of guardedFiles) {
-    const text = readFile(file);
-    for (const pattern of forbiddenPatterns) {
-      if (pattern.test(text)) {
-        failures.push(`${formatPath(file)} includes forbidden offline runtime token ${pattern}`);
-      }
-    }
-  }
-
-  assert.equal(failures.length, 0, `Offline approval gate boundary failed:\n${failures.join("\n")}`);
-}
-
 function assertNoDeferredDependencies() {
-  assert.equal(packageJson.dependencies, undefined, "Phase 11 must not add runtime dependencies.");
+  assert.equal(packageJson.dependencies, undefined, "Phase 12 must not add runtime dependencies.");
 
   const devDependencyNames = Object.keys(packageJson.devDependencies ?? {});
   assert.deepEqual(
     devDependencyNames,
     ["vite"],
-    "Phase 11 must keep dev dependencies limited to the existing Vite build tool.",
+    "Phase 12 must keep dev dependencies limited to the existing Vite build tool.",
   );
 
   const dependencyNames = [
@@ -194,7 +142,7 @@ function assertNoDeferredDependencies() {
   assert.deepEqual(
     forbiddenDependencies,
     [],
-    "Phase 11 must not add service-worker, backend, analytics, or native packaging dependencies.",
+    "Phase 12 must not add service-worker tooling, backend, analytics, or native packaging dependencies.",
   );
 }
 
@@ -209,20 +157,4 @@ function readFile(path) {
 
 function readJson(path) {
   return JSON.parse(readFile(path));
-}
-
-function collectFiles(dir) {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    return statSync(path).isDirectory() ? collectFiles(path) : [path];
-  });
-}
-
-function isRuntimeFile(file) {
-  return file.endsWith(".js") || file.endsWith(".css");
-}
-
-function formatPath(path) {
-  return relative(rootDir, path);
 }

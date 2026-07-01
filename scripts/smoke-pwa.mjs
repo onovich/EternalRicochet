@@ -10,6 +10,7 @@ const publicManifestPath = join(publicDir, "manifest.webmanifest");
 const distManifestPath = join(distDir, "manifest.webmanifest");
 const sourceIndexPath = join(rootDir, "index.html");
 const distIndexPath = join(distDir, "index.html");
+const distServiceWorkerPath = join(distDir, "service-worker.js");
 
 const manifest = readJson(publicManifestPath);
 const sourceIndex = readFileSync(sourceIndexPath, "utf8");
@@ -68,19 +69,20 @@ assert.ok(
   existsSync(join(distDir, "icons", "maskable-icon.svg")),
   "dist/icons/maskable-icon.svg must exist",
 );
+assert.ok(existsSync(distServiceWorkerPath), "dist/service-worker.js must exist after Phase 12 build");
 
 const distIndex = readFileSync(distIndexPath, "utf8");
 assert.equal(distIndex.includes("/EternalRicochet/manifest.webmanifest"), true);
 assert.equal(distIndex.includes("/EternalRicochet/icons/icon.svg"), true);
 
 for (const text of [sourceIndex, JSON.stringify(manifest)]) {
-  assertNoDeferredPwaScope(text);
+  assertNoDeferredManifestScope(text);
 }
 assertManifestHasNoDeferredCapabilities(manifest);
 assertPackageHasNoPlatformDeps();
-assertRuntimeHasNoPlatformScope();
+assertRuntimeHasOnlyApprovedPlatformScope();
 
-console.log("PWA smoke passed: manifest metadata, icon assets, hosted paths, and no-service-worker boundary are intact.");
+console.log("PWA smoke passed: manifest metadata, icon assets, hosted paths, and Phase 12 service-worker boundary are intact.");
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -90,10 +92,8 @@ function publicPathFromHostedSrc(src) {
   return join(publicDir, src.slice(hostedBase.length));
 }
 
-function assertNoDeferredPwaScope(text) {
+function assertNoDeferredManifestScope(text) {
   const forbiddenTokens = [
-    "serviceWorker",
-    "navigator.serviceWorker",
     "caches.",
     "CacheStorage",
     "BackgroundSync",
@@ -129,24 +129,21 @@ function assertManifestHasNoDeferredCapabilities(candidate) {
 
 function assertPackageHasNoPlatformDeps() {
   const packageJson = readJson(join(rootDir, "package.json"));
-  assert.equal(packageJson.dependencies, undefined, "Phase 8 must not add runtime dependencies");
+  assert.equal(packageJson.dependencies, undefined, "Phase 12 must not add runtime dependencies");
   assert.deepEqual(
     Object.keys(packageJson.devDependencies ?? {}),
     ["vite"],
-    "Phase 8 must not add platform/native/backend dev dependencies",
+    "Phase 12 must not add platform/native/backend dev dependencies",
   );
 }
 
-function assertRuntimeHasNoPlatformScope() {
+function assertRuntimeHasOnlyApprovedPlatformScope() {
   const runtimeFiles = [
     sourceIndexPath,
     ...collectFiles(join(rootDir, "src")).filter((file) => file.endsWith(".js")),
+    distServiceWorkerPath,
   ];
   const forbiddenPatterns = [
-    /\bnavigator\.serviceWorker\b/,
-    /\bserviceWorker\.register\b/,
-    /\bcaches\./,
-    /\bCacheStorage\b/,
     /\bBackgroundSync\b/,
     /\bPushManager\b/,
     /\bNotification\.requestPermission\b/,
@@ -158,6 +155,8 @@ function assertRuntimeHasNoPlatformScope() {
     /from\s+["']electron/,
     /\bFirebaseApp\b/,
     /\bcreateClient\s*\(/,
+    /\bimportScripts\s*\(/,
+    /\bworkbox\b/i,
   ];
 
   for (const file of runtimeFiles) {

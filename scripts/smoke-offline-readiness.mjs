@@ -13,6 +13,7 @@ const sourceIndexPath = join(rootDir, "index.html");
 const packagePath = join(rootDir, "package.json");
 const distIndexPath = join(distDir, "index.html");
 const distManifestPath = join(distDir, "manifest.webmanifest");
+const distServiceWorkerPath = join(distDir, "service-worker.js");
 
 assert.ok(existsSync(distDir), "dist must exist. Run npm run build before npm run smoke:offline-readiness.");
 assert.ok(existsSync(distIndexPath), "dist/index.html must exist after build.");
@@ -20,9 +21,11 @@ assert.ok(existsSync(distAssetsDir), "dist/assets must exist after build.");
 assert.ok(existsSync(distManifestPath), "dist/manifest.webmanifest must exist after build.");
 assert.ok(existsSync(join(distIconsDir, "icon.svg")), "dist/icons/icon.svg must exist after build.");
 assert.ok(existsSync(join(distIconsDir, "maskable-icon.svg")), "dist/icons/maskable-icon.svg must exist after build.");
+assert.ok(existsSync(distServiceWorkerPath), "dist/service-worker.js must exist after Phase 12 build.");
 
 const distIndex = readFile(distIndexPath);
 const distManifest = readJson(distManifestPath);
+const distServiceWorker = readFile(distServiceWorkerPath);
 const jsAssets = readdirSync(distAssetsDir).filter((file) => file.endsWith(".js")).sort();
 const cssAssets = readdirSync(distAssetsDir).filter((file) => file.endsWith(".css")).sort();
 
@@ -37,6 +40,11 @@ for (const file of jsAssets) {
     true,
     `dist/index.html must reference ${file} under ${hostedBase}`,
   );
+  assert.equal(
+    distServiceWorker.includes(`${hostedBase}assets/${file}`),
+    true,
+    `dist/service-worker.js must precache ${file} under ${hostedBase}`,
+  );
 }
 
 for (const file of cssAssets) {
@@ -44,6 +52,11 @@ for (const file of cssAssets) {
     distIndex.includes(`${hostedBase}assets/${file}`),
     true,
     `dist/index.html must reference ${file} under ${hostedBase}`,
+  );
+  assert.equal(
+    distServiceWorker.includes(`${hostedBase}assets/${file}`),
+    true,
+    `dist/service-worker.js must precache ${file} under ${hostedBase}`,
   );
 }
 
@@ -65,19 +78,19 @@ const guardedSourceFiles = [
 const guardedDistFiles = [
   distIndexPath,
   distManifestPath,
+  distServiceWorkerPath,
   ...collectFiles(distAssetsDir).filter(isRuntimeFile),
   ...collectFiles(distIconsDir).filter((file) => file.endsWith(".svg")),
 ];
 const guardedFiles = [...guardedSourceFiles, ...guardedDistFiles].filter(existsSync);
 
 assertNoUnapprovedExternalUrls(guardedFiles);
-assertNoServiceWorkerFiles();
-assertNoServiceWorkerReferences(guardedFiles);
-assertNoRuntimeOfflineScope(guardedFiles);
+assertServiceWorkerFileBoundary();
+assertNoDeferredRuntimeScope(guardedFiles);
 assertNoDeferredDependencies();
 
 console.log(
-  `Offline readiness dry-run passed: ${jsAssets.length} JS, ${cssAssets.length} CSS, manifest, and 2 icon cache candidates inspected without shipping service-worker runtime.`,
+  `Offline readiness passed: ${jsAssets.length} JS, ${cssAssets.length} CSS, manifest, 2 icons, and generated service worker inspected.`,
 );
 
 function readFile(path) {
@@ -98,6 +111,7 @@ function assertManifestIcon(src) {
   assert.equal(icon.src.startsWith(hostedBase), true, `${src} must stay under ${hostedBase}`);
   assert.equal(icon.src.startsWith("http://"), false);
   assert.equal(icon.src.startsWith("https://"), false);
+  assert.equal(distServiceWorker.includes(src), true, `dist/service-worker.js must precache ${src}`);
 }
 
 function assertNoUnapprovedExternalUrls(files) {
@@ -117,7 +131,7 @@ function assertNoUnapprovedExternalUrls(files) {
   assert.equal(failures.length, 0, `External runtime URL boundary failed:\n${failures.join("\n")}`);
 }
 
-function assertNoServiceWorkerFiles() {
+function assertServiceWorkerFileBoundary() {
   const serviceWorkerFilePattern = /^(sw|service-worker|serviceWorker|workbox)([-_.].*)?\.(js|mjs|cjs|ts|map)$/i;
   const rootLevelFiles = readdirSync(rootDir)
     .map((entry) => join(rootDir, entry))
@@ -128,54 +142,34 @@ function assertNoServiceWorkerFiles() {
     ...collectFiles(sourceDir),
     ...collectFiles(distDir),
   ];
-  const matches = files.filter((file) => serviceWorkerFilePattern.test(basename(file)));
+  const matches = files.filter((file) => serviceWorkerFilePattern.test(basename(file))).map(formatPath).sort();
 
   assert.deepEqual(
-    matches.map(formatPath),
-    [],
-    "Phase 10 must not add service-worker or Workbox runtime files.",
+    matches,
+    ["dist/service-worker.js"],
+    "Phase 12 must keep the service-worker runtime generated under dist only.",
   );
 }
 
-function assertNoServiceWorkerReferences(files) {
-  const forbiddenReferencePatterns = [
-    /["'(/]sw\.(js|mjs|cjs|ts|map)\b/i,
-    /service-worker\.(js|mjs|cjs|ts|map)\b/i,
-    /serviceWorker\.(js|mjs|cjs|ts|map)\b/i,
-    /workbox[-_.]/i,
-  ];
-  const failures = [];
-
-  for (const file of files) {
-    const text = readFile(file);
-    for (const pattern of forbiddenReferencePatterns) {
-      if (pattern.test(text)) {
-        failures.push(`${formatPath(file)} includes forbidden service-worker reference ${pattern}`);
-      }
-    }
-  }
-
-  assert.equal(failures.length, 0, `Service-worker reference boundary failed:\n${failures.join("\n")}`);
-}
-
-function assertNoRuntimeOfflineScope(files) {
+function assertNoDeferredRuntimeScope(files) {
   const forbiddenPatterns = [
-    /\bnavigator\.serviceWorker\b/,
-    /\bserviceWorker\.register\b/,
-    /\bcaches\./,
-    /\bcaches\.open\b/,
-    /\bCacheStorage\b/,
-    /\bclients\.claim\b/,
-    /\bskipWaiting\b/,
     /\bimportScripts\s*\(/,
     /\bworkbox\b/i,
+    /\bBackgroundSync\b/,
+    /\bPushManager\b/,
+    /\bNotification\.requestPermission\b/,
     /offline fallback/i,
     /works offline/i,
     /available offline/i,
     /offline ready/i,
     /offline-capable/i,
     /offline mode/i,
-    /offline support/i,
+    /from\s+["']firebase/,
+    /from\s+["']@firebase/,
+    /from\s+["']@supabase/,
+    /from\s+["']@capacitor/,
+    /from\s+["']cordova/,
+    /from\s+["']electron/,
   ];
   const failures = [];
 
@@ -183,23 +177,23 @@ function assertNoRuntimeOfflineScope(files) {
     const text = readFile(file);
     for (const pattern of forbiddenPatterns) {
       if (pattern.test(text)) {
-        failures.push(`${formatPath(file)} includes forbidden offline runtime token ${pattern}`);
+        failures.push(`${formatPath(file)} includes forbidden deferred runtime token ${pattern}`);
       }
     }
   }
 
-  assert.equal(failures.length, 0, `Offline runtime boundary failed:\n${failures.join("\n")}`);
+  assert.equal(failures.length, 0, `Deferred runtime boundary failed:\n${failures.join("\n")}`);
 }
 
 function assertNoDeferredDependencies() {
   const packageJson = readJson(packagePath);
-  assert.equal(packageJson.dependencies, undefined, "Phase 10 must not add runtime dependencies.");
+  assert.equal(packageJson.dependencies, undefined, "Phase 12 must not add runtime dependencies.");
 
   const devDependencyNames = Object.keys(packageJson.devDependencies ?? {});
   assert.deepEqual(
     devDependencyNames,
     ["vite"],
-    "Phase 10 must keep dev dependencies limited to the existing Vite build tool.",
+    "Phase 12 must keep dev dependencies limited to the existing Vite build tool.",
   );
 
   const dependencyNames = [
@@ -212,7 +206,7 @@ function assertNoDeferredDependencies() {
   assert.deepEqual(
     forbiddenDependencies,
     [],
-    "Phase 10 must not add service-worker, backend, analytics, or native packaging dependencies.",
+    "Phase 12 must not add service-worker tooling, backend, analytics, or native packaging dependencies.",
   );
 }
 
@@ -233,5 +227,5 @@ function trimUrl(url) {
 }
 
 function formatPath(path) {
-  return relative(rootDir, path);
+  return relative(rootDir, path).replace(/\\/g, "/");
 }
