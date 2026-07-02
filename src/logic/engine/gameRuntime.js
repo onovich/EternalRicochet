@@ -254,15 +254,15 @@ export function createGameRuntime({
   }
 
   function fireIfRequested() {
-    const angle = input.consumeShootAngle(player);
-    if (angle === null) return;
+    const shot = input.consumeShot(player, runConfig.bullet.charge);
+    if (shot === null) return;
 
     const bullet = bulletPool.getAvailable();
     if (!bullet) return;
 
-    bullet.fireFrom({ x: player.x, y: player.y }, angle);
+    bullet.fireFrom({ x: player.x, y: player.y }, shot.angle, { chargePower: shot.chargePower });
     combo.reset();
-    player.applyShotRecoil(angle);
+    player.applyShotRecoil(shot.angle);
     input.clearRecallLatch();
     audio.sfx.shoot();
     addScreenShake(config.feedback.shotShake);
@@ -300,6 +300,7 @@ export function createGameRuntime({
     for (const obstacle of obstacles) {
       resolveCircleObstacleSeparation(player, obstacle);
     }
+    input.updateCharge();
     fireIfRequested();
     for (const bullet of bulletPool.getActive()) {
       handleBulletEvents(
@@ -491,6 +492,7 @@ export function createGameRuntime({
         trailLength: bullet.trail.length,
       })),
       ammo: bulletPool.getAmmoState(),
+      charge: input.getChargeState(),
       enemies: enemies.map((enemy) => ({
         type: enemy.type,
         hp: enemy.hp,

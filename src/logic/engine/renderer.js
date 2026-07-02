@@ -242,6 +242,7 @@ export function createRenderer({
       ctx.setLineDash([5, 5]);
       ctx.stroke();
       ctx.restore();
+      drawChargeIndicator(player);
       return;
     }
 
@@ -257,7 +258,27 @@ export function createRenderer({
       ctx.lineWidth = 3;
       ctx.stroke();
       ctx.restore();
+      drawChargeIndicator(player);
     }
+  }
+
+  function drawChargeIndicator(player) {
+    const chargeState = input.getChargeState?.() ?? { active: false, frames: 0 };
+    if (!chargeState.active) return;
+
+    const chargeConfig = config.bullet.charge;
+    const ratio = Math.min(1, Math.max(0, chargeState.frames / Math.max(1, chargeConfig.framesToMax)));
+    const radius = chargeConfig.indicatorRadius;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+    ctx.strokeStyle = `rgba(250, 204, 21, ${0.35 + ratio * 0.45})`;
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.shadowBlur = scaleGlow(12);
+    ctx.shadowColor = "#facc15";
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawJoysticks(gameState, canFire) {

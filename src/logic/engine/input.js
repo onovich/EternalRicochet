@@ -15,8 +15,10 @@ export function createInputController({
   const leftStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, dx: 0, dy: 0 };
   const rightStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, isDragging: false };
   let recallTriggered = false;
-  let pendingMouseShot = false;
-  let pendingTouchShotAngle = null;
+  let mouseChargeFrames = 0;
+  let touchChargeFrames = 0;
+  let pendingMouseShot = null;
+  let pendingTouchShot = null;
 
   function setKey(event, value) {
     const key = event.key.toLowerCase();
@@ -36,8 +38,9 @@ export function createInputController({
   });
   windowRef.addEventListener("mousedown", (event) => {
     if (event.button === 0) {
+      if (mouse.leftDown) return;
       mouse.leftDown = true;
-      pendingMouseShot = true;
+      mouseChargeFrames = 0;
     }
     if (event.button === 2) {
       mouse.rightDown = true;
@@ -45,7 +48,11 @@ export function createInputController({
     }
   });
   windowRef.addEventListener("mouseup", (event) => {
-    if (event.button === 0) mouse.leftDown = false;
+    if (event.button === 0 && mouse.leftDown) {
+      pendingMouseShot = { chargeFrames: mouseChargeFrames };
+      mouse.leftDown = false;
+      mouseChargeFrames = 0;
+    }
     if (event.button === 2) mouse.rightDown = false;
   });
   windowRef.addEventListener("pointerdown", (event) => {
@@ -53,8 +60,9 @@ export function createInputController({
     mouse.x = event.clientX;
     mouse.y = event.clientY;
     if (event.button === 0) {
+      if (mouse.leftDown) return;
       mouse.leftDown = true;
-      pendingMouseShot = true;
+      mouseChargeFrames = 0;
     }
     if (event.button === 2) {
       mouse.rightDown = true;
@@ -65,7 +73,11 @@ export function createInputController({
     if (event.pointerType === "touch") return;
     mouse.x = event.clientX;
     mouse.y = event.clientY;
-    if (event.button === 0) mouse.leftDown = false;
+    if (event.button === 0 && mouse.leftDown) {
+      pendingMouseShot = { chargeFrames: mouseChargeFrames };
+      mouse.leftDown = false;
+      mouseChargeFrames = 0;
+    }
     if (event.button === 2) mouse.rightDown = false;
   });
   windowRef.addEventListener("contextmenu", (event) => event.preventDefault());
@@ -88,6 +100,7 @@ export function createInputController({
         rightStick.x = touch.clientX;
         rightStick.y = touch.clientY;
         rightStick.isDragging = false;
+        touchChargeFrames = 0;
       }
     }
   });
@@ -134,14 +147,24 @@ export function createInputController({
         rightStick.active = false;
         if (rightStick.isDragging) {
           if (!getBulletActive()) {
-            pendingTouchShotAngle = Math.atan2(rightStick.y - rightStick.oy, rightStick.x - rightStick.ox);
+            pendingTouchShot = {
+              angle: Math.atan2(rightStick.y - rightStick.oy, rightStick.x - rightStick.ox),
+              chargeFrames: touchChargeFrames,
+            };
           }
         } else {
           recallTriggered = true;
         }
+        touchChargeFrames = 0;
       }
     }
   });
+
+  function updateCharge() {
+    if (getGameState() !== "PLAYING") return;
+    if (mouse.leftDown) mouseChargeFrames += 1;
+    if (rightStick.active && rightStick.isDragging) touchChargeFrames += 1;
+  }
 
   function getMoveVector() {
     let moveX = 0;
@@ -164,22 +187,31 @@ export function createInputController({
     return { x: moveX, y: moveY };
   }
 
-  function consumeShootAngle(player) {
+  function consumeShot(player, chargeConfig) {
     if (getBulletActive()) {
-      pendingMouseShot = false;
-      pendingTouchShotAngle = null;
+      pendingMouseShot = null;
+      pendingTouchShot = null;
       return null;
     }
 
-    if (pendingTouchShotAngle !== null) {
-      const angle = pendingTouchShotAngle;
-      pendingTouchShotAngle = null;
-      return angle;
+    if (pendingTouchShot !== null) {
+      const shot = {
+        angle: pendingTouchShot.angle,
+        source: "touch",
+        ...resolveCharge(pendingTouchShot.chargeFrames, chargeConfig),
+      };
+      pendingTouchShot = null;
+      return shot;
     }
 
     if (pendingMouseShot) {
-      pendingMouseShot = false;
-      return Math.atan2(mouse.y - player.y, mouse.x - player.x);
+      const chargeFrames = pendingMouseShot.chargeFrames;
+      pendingMouseShot = null;
+      return {
+        angle: Math.atan2(mouse.y - player.y, mouse.x - player.x),
+        source: "mouse",
+        ...resolveCharge(chargeFrames, chargeConfig),
+      };
     }
 
     return null;
@@ -197,20 +229,47 @@ export function createInputController({
     mouse.leftDown = false;
     mouse.rightDown = false;
     recallTriggered = false;
-    pendingMouseShot = false;
-    pendingTouchShotAngle = null;
+    pendingMouseShot = null;
+    pendingTouchShot = null;
+    mouseChargeFrames = 0;
+    touchChargeFrames = 0;
   }
 
   function getAimState() {
     return { isTouchDevice, mouse, leftStick, rightStick };
   }
 
+  function getChargeState() {
+    if (mouse.leftDown) {
+      return { active: true, frames: mouseChargeFrames, source: "mouse" };
+    }
+    if (rightStick.active && rightStick.isDragging) {
+      return { active: true, frames: touchChargeFrames, source: "touch" };
+    }
+    return { active: false, frames: 0, source: null };
+  }
+
   return {
     getMoveVector,
-    consumeShootAngle,
+    consumeShot,
+    consumeShootAngle: (player) => consumeShot(player)?.angle ?? null,
     isRecallRequested,
     clearRecallLatch,
     resetTransient,
     getAimState,
+    getChargeState,
+    updateCharge,
+  };
+}
+
+function resolveCharge(frames, config = {}) {
+  const framesToMax = Math.max(1, Number(config.framesToMax ?? 1));
+  const minPower = Number(config.minPower ?? 0);
+  const maxPower = Number(config.maxPower ?? 1);
+  const ratio = Math.min(1, Math.max(0, Number(frames) / framesToMax));
+  return {
+    chargeFrames: Math.max(0, Number(frames) || 0),
+    chargeRatio: ratio,
+    chargePower: minPower + ratio * (maxPower - minPower),
   };
 }

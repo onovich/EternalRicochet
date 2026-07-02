@@ -77,23 +77,33 @@ export class Bullet {
     this.isRecalling = false;
     this.trail = [];
     this.enemyHitCooldowns = new Map();
+    this.activeFrames = 0;
+    this.travelDistance = 0;
+    this.originX = 0;
+    this.originY = 0;
   }
 
-  fireFrom(origin, angle) {
+  fireFrom(origin, angle, options = {}) {
+    const speed = resolveShotSpeed(options, this.config);
     this.active = true;
     this.x = origin.x;
     this.y = origin.y;
-    this.vx = Math.cos(angle) * this.baseSpeed;
-    this.vy = Math.sin(angle) * this.baseSpeed;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
     this.isRecalling = false;
     this.trail = [{ x: origin.x, y: origin.y }];
     this.enemyHitCooldowns.clear();
+    this.activeFrames = 0;
+    this.travelDistance = 0;
+    this.originX = origin.x;
+    this.originY = origin.y;
   }
 
   update({ recallRequested, player, bounds }) {
     const events = [];
     if (!this.active) return events;
 
+    this.activeFrames += 1;
     this.tickEnemyHitCooldowns();
 
     if (recallRequested) {
@@ -124,8 +134,11 @@ export class Bullet {
       this.vy *= this.config.naturalDrag;
     }
 
+    const previousX = this.x;
+    const previousY = this.y;
     this.x += this.vx;
     this.y += this.vy;
+    this.travelDistance += Math.hypot(this.x - previousX, this.y - previousY);
 
     const wallBounce = resolveBulletWallBounce(this, bounds, this.config);
     if (wallBounce.bounced) {
@@ -238,6 +251,23 @@ export class Enemy {
     this.hp -= 1;
     return this.hp <= 0;
   }
+}
+
+function resolveShotSpeed(options, config) {
+  if (Number.isFinite(options.speed)) {
+    return Math.max(0, Number(options.speed));
+  }
+
+  const charge = config.charge;
+  if (!charge) return config.baseSpeed;
+
+  const minPower = Number.isFinite(charge.minPower) ? charge.minPower : 0;
+  const maxPower = Number.isFinite(charge.maxPower) ? charge.maxPower : 1;
+  const powerRange = Math.max(Number.EPSILON, maxPower - minPower);
+  const rawPower = Number.isFinite(options.chargePower) ? Number(options.chargePower) : minPower;
+  const clampedPower = Math.min(maxPower, Math.max(minPower, rawPower));
+  const ratio = (clampedPower - minPower) / powerRange;
+  return charge.minShotSpeed + ratio * (charge.maxShotSpeed - charge.minShotSpeed);
 }
 
 export class Obstacle {

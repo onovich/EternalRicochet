@@ -13,6 +13,7 @@ import {
 } from "../src/logic/engine/collisions.js";
 import { resolveDevStressSeed } from "../src/logic/engine/devStress.js";
 import { Bullet, Enemy, EnemyProjectile, Player } from "../src/logic/engine/entities.js";
+import { createInputController } from "../src/logic/engine/input.js";
 import { createObstacleLayout, isPointSafeFromObstacles } from "../src/logic/engine/level.js";
 import {
   awardCredits,
@@ -89,7 +90,7 @@ function smokeBulletFireReset() {
   assert.equal(bullet.isRecalling, false);
   assert.deepEqual(bullet.trail, [{ x: 120, y: 180 }]);
   assert.equal(bullet.enemyHitCooldowns.size, 0);
-  assert.ok(magnitude({ x: bullet.vx, y: bullet.vy }) > 20);
+  assert.equal(magnitude({ x: bullet.vx, y: bullet.vy }), GAME_CONFIG.bullet.charge.minShotSpeed);
 }
 
 function smokePhase13ConfigDefaults() {
@@ -146,6 +147,53 @@ function smokeBulletPoolAmmoState() {
   first.collect();
   assert.equal(pool.getAvailable(), first);
   assert.deepEqual(pool.getAmmoState(), { active: 1, available: 2, total: 3 });
+}
+
+function smokeChargedShotSpeedClamp() {
+  const bullet = new Bullet();
+  const charge = GAME_CONFIG.bullet.charge;
+
+  bullet.fireFrom({ x: 120, y: 180 }, 0);
+  assert.equal(magnitude({ x: bullet.vx, y: bullet.vy }), charge.minShotSpeed);
+
+  bullet.fireFrom({ x: 120, y: 180 }, 0, { chargePower: charge.minPower });
+  assert.equal(magnitude({ x: bullet.vx, y: bullet.vy }), charge.minShotSpeed);
+
+  bullet.fireFrom({ x: 120, y: 180 }, 0, { chargePower: charge.maxPower });
+  assert.equal(magnitude({ x: bullet.vx, y: bullet.vy }), charge.maxShotSpeed);
+
+  bullet.fireFrom({ x: 120, y: 180 }, 0, { chargePower: charge.maxPower + 100 });
+  assert.equal(magnitude({ x: bullet.vx, y: bullet.vy }), charge.maxShotSpeed);
+}
+
+function smokeChargedMouseInputRelease() {
+  const windowRef = createInputTestWindow();
+  const input = createInputController({
+    canvas: { width: 320, height: 240 },
+    getGameState: () => "PLAYING",
+    getBulletActive: () => false,
+    windowRef,
+  });
+
+  windowRef.dispatch("mousemove", { clientX: 220, clientY: 120 });
+  windowRef.dispatch("mousedown", { button: 0 });
+  input.updateCharge();
+  input.updateCharge();
+  assert.deepEqual(input.getChargeState(), { active: true, frames: 2, source: "mouse" });
+
+  windowRef.dispatch("mouseup", { button: 0 });
+  const charged = input.consumeShot({ x: 100, y: 120 }, GAME_CONFIG.bullet.charge);
+  assert.equal(charged.source, "mouse");
+  assert.equal(charged.angle, 0);
+  assert.equal(charged.chargeFrames, 2);
+  assert.equal(charged.chargeRatio, 2 / GAME_CONFIG.bullet.charge.framesToMax);
+  assert.ok(charged.chargePower > GAME_CONFIG.bullet.charge.minPower);
+
+  windowRef.dispatch("mousedown", { button: 0 });
+  windowRef.dispatch("mouseup", { button: 0 });
+  const quick = input.consumeShot({ x: 100, y: 120 }, GAME_CONFIG.bullet.charge);
+  assert.equal(quick.chargeFrames, 0);
+  assert.equal(quick.chargePower, GAME_CONFIG.bullet.charge.minPower);
 }
 
 function smokeWallBounceEnergy() {
@@ -1102,6 +1150,27 @@ function smokeLeaderboardCopyBoundary() {
   assert.equal(getLeaderboardCopy("missing-key"), LEADERBOARD_COPY[LEADERBOARD_COPY_KEYS.LOCAL_ONLY]);
 }
 
+function createInputTestWindow() {
+  const listeners = new Map();
+  return {
+    navigator: { maxTouchPoints: 0 },
+    innerWidth: 800,
+    addEventListener(type, handler) {
+      const handlers = listeners.get(type) ?? [];
+      handlers.push(handler);
+      listeners.set(type, handlers);
+    },
+    dispatch(type, event = {}) {
+      for (const handler of listeners.get(type) ?? []) {
+        handler({
+          preventDefault() {},
+          ...event,
+        });
+      }
+    },
+  };
+}
+
 function createMemoryStorage() {
   const values = new Map();
   return {
@@ -1185,6 +1254,8 @@ function hasProjectileTrailStroke(ctx) {
 smokeBulletFireReset();
 smokePhase13ConfigDefaults();
 smokeBulletPoolAmmoState();
+smokeChargedShotSpeedClamp();
+smokeChargedMouseInputRelease();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeComboScoring();
