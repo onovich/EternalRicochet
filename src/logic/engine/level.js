@@ -14,6 +14,7 @@ export function createObstacleLayout(bounds, config = GAME_CONFIG.obstacles) {
       radius,
       index,
       config,
+      item.motion ?? null,
     );
   });
 }
@@ -24,4 +25,3 @@ export function isPointSafeFromObstacles(point, radius, obstacles, padding = 0) 
     return Math.hypot(point.x - obstacle.x, point.y - obstacle.y) >= minDistance;
   });
 }
-

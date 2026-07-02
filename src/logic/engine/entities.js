@@ -271,16 +271,71 @@ function resolveShotSpeed(options, config) {
 }
 
 export class Obstacle {
-  constructor(x, y, radius, index, config = GAME_CONFIG.obstacles) {
+  constructor(x, y, radius, index, config = GAME_CONFIG.obstacles, motion = null) {
     this.id = `obstacle-${index}`;
     this.x = x;
     this.y = y;
+    this.originX = x;
+    this.originY = y;
+    this.prevX = x;
+    this.prevY = y;
+    this.vx = 0;
+    this.vy = 0;
     this.radius = radius;
     this.color = config.color;
     this.coreColor = config.coreColor;
+    this.motionHintColor = config.motionHintColor;
     this.restitution = config.restitution;
     this.minBounceSpeed = config.minBounceSpeed;
+    this.motion = motion;
   }
+
+  update(frame, bounds, config = GAME_CONFIG.obstacles) {
+    if (!this.motion) {
+      this.vx = 0;
+      this.vy = 0;
+      return;
+    }
+
+    this.prevX = this.x;
+    this.prevY = this.y;
+
+    const speed = Number(this.motion.speed) || 0;
+    const phase = Number(this.motion.phase) || 0;
+    const t = frame * speed + phase;
+    const amplitudeX = Number(this.motion.amplitudeX) || 0;
+    const amplitudeY = Number(this.motion.amplitudeY) || 0;
+    const next = resolveMotionOffset(this.motion.type, t, amplitudeX, amplitudeY);
+    const minX = this.radius + config.edgePadding;
+    const maxX = bounds.width - this.radius - config.edgePadding;
+    const minY = this.radius + config.edgePadding;
+    const maxY = bounds.height - this.radius - config.edgePadding;
+
+    this.x = clamp(this.originX + next.x, minX, maxX);
+    this.y = clamp(this.originY + next.y, minY, maxY);
+    this.vx = this.x - this.prevX;
+    this.vy = this.y - this.prevY;
+  }
+}
+
+function resolveMotionOffset(type, t, amplitudeX, amplitudeY) {
+  if (type === "horizontal") {
+    return { x: Math.sin(t) * amplitudeX, y: 0 };
+  }
+  if (type === "vertical") {
+    return { x: 0, y: Math.sin(t) * amplitudeY };
+  }
+  if (type === "orbit" || type === "ellipse") {
+    return { x: Math.cos(t) * amplitudeX, y: Math.sin(t) * amplitudeY };
+  }
+  if (type === "lissajous") {
+    return { x: Math.sin(t) * amplitudeX, y: Math.sin(t * 2 + Math.PI / 3) * amplitudeY };
+  }
+  return { x: 0, y: 0 };
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 export class EnemyProjectile {

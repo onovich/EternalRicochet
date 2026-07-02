@@ -296,6 +296,7 @@ export function createGameRuntime({
     }
 
     frameCount += 1;
+    updateObstacles();
     player.update({ moveVector: input.getMoveVector(), bounds: getBounds() });
     for (const obstacle of obstacles) {
       resolveCircleObstacleSeparation(player, obstacle);
@@ -358,6 +359,13 @@ export function createGameRuntime({
           addScreenShake(config.feedback.obstacleBounceShake);
         }
       }
+    }
+  }
+
+  function updateObstacles() {
+    const bounds = getBounds();
+    for (const obstacle of obstacles) {
+      obstacle.update(frameCount, bounds, config.obstacles);
     }
   }
 

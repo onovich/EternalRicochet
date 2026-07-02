@@ -285,6 +285,48 @@ function smokeObstacleLayoutAndBounce() {
   assert.ok(magnitude({ x: bullet.vx, y: bullet.vy }) >= GAME_CONFIG.obstacles.minBounceSpeed);
 }
 
+function smokeMovingObstacleDeterminismAndBounds() {
+  const bounds = { width: 960, height: 540 };
+  const first = createObstacleLayout(bounds);
+  const second = createObstacleLayout(bounds);
+
+  for (let frame = 1; frame <= 240; frame += 17) {
+    for (let i = 0; i < first.length; i += 1) {
+      first[i].update(frame, bounds);
+      second[i].update(frame, bounds);
+      assert.equal(first[i].x, second[i].x);
+      assert.equal(first[i].y, second[i].y);
+      assert.ok(first[i].x >= first[i].radius + GAME_CONFIG.obstacles.edgePadding);
+      assert.ok(first[i].x <= bounds.width - first[i].radius - GAME_CONFIG.obstacles.edgePadding);
+      assert.ok(first[i].y >= first[i].radius + GAME_CONFIG.obstacles.edgePadding);
+      assert.ok(first[i].y <= bounds.height - first[i].radius - GAME_CONFIG.obstacles.edgePadding);
+    }
+  }
+
+  assert.ok(first.some((obstacle) => Math.hypot(obstacle.vx, obstacle.vy) > 0));
+}
+
+function smokeMovingObstacleRelativeBounce() {
+  const obstacle = createObstacleLayout({ width: 640, height: 360 })[0];
+  obstacle.x = 240;
+  obstacle.y = 180;
+  obstacle.prevX = 236;
+  obstacle.prevY = 180;
+  obstacle.vx = 4;
+  obstacle.vy = 0;
+
+  const bullet = new Bullet();
+  bullet.fireFrom({ x: obstacle.x - obstacle.radius - GAME_CONFIG.bullet.radius + 2, y: obstacle.y }, 0, {
+    speed: 14,
+  });
+
+  const result = resolveBulletObstacleCollision({ bullet, obstacle });
+
+  assert.equal(result.bounced, true);
+  assert.ok(bullet.vx < obstacle.vx);
+  assert.ok(magnitude({ x: bullet.vx - obstacle.vx, y: bullet.vy - obstacle.vy }) >= GAME_CONFIG.obstacles.minBounceSpeed);
+}
+
 function smokeShooterProjectileLifecycle() {
   const bounds = { width: 420, height: 260 };
   const shooter = new Enemy(80, 130, "shooter");
@@ -1260,6 +1302,8 @@ smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeComboScoring();
 smokeObstacleLayoutAndBounce();
+smokeMovingObstacleDeterminismAndBounds();
+smokeMovingObstacleRelativeBounce();
 smokeShooterProjectileLifecycle();
 smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();

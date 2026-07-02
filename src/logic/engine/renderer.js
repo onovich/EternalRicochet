@@ -84,6 +84,7 @@ export function createRenderer({
   }
 
   function drawObstacle(obstacle) {
+    drawObstacleMotionHint(obstacle);
     ctx.save();
     ctx.translate(obstacle.x, obstacle.y);
     ctx.beginPath();
@@ -100,6 +101,20 @@ export function createRenderer({
     ctx.arc(0, 0, obstacle.radius * 0.45, 0, Math.PI * 2);
     ctx.strokeStyle = "rgba(255,255,255,0.45)";
     ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawObstacleMotionHint(obstacle) {
+    if (!obstacle.motion) return;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(obstacle.originX, obstacle.originY);
+    ctx.lineTo(obstacle.x, obstacle.y);
+    ctx.strokeStyle = obstacle.motionHintColor ?? "rgba(0, 255, 170, 0.18)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 8]);
     ctx.stroke();
     ctx.restore();
   }

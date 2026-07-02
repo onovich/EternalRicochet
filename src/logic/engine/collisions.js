@@ -100,8 +100,13 @@ export function resolveBulletObstacleCollision({ bullet, obstacle, config = GAME
     { x: bullet.x - obstacle.x, y: bullet.y - obstacle.y },
     velocityFallbackNormal({ x: bullet.vx, y: bullet.vy }),
   );
+  const obstacleVelocity = { x: obstacle.vx ?? 0, y: obstacle.vy ?? 0 };
+  const relativeVelocity = {
+    x: bullet.vx - obstacleVelocity.x,
+    y: bullet.vy - obstacleVelocity.y,
+  };
   const reflected = reflectVelocity(
-    { x: bullet.vx, y: bullet.vy },
+    relativeVelocity,
     normal,
     obstacle.restitution ?? config.obstacles.restitution,
   );
@@ -111,8 +116,8 @@ export function resolveBulletObstacleCollision({ bullet, obstacle, config = GAME
     config.bullet.maxBounceSpeed,
   );
 
-  bullet.vx = clamped.x;
-  bullet.vy = clamped.y;
+  bullet.vx = clamped.x + obstacleVelocity.x;
+  bullet.vy = clamped.y + obstacleVelocity.y;
   bullet.x = obstacle.x + normal.x * minDistance;
   bullet.y = obstacle.y + normal.y * minDistance;
   return { bounced: true };
