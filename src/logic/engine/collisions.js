@@ -145,6 +145,7 @@ export function resolveBulletEnemyCollision({ bullet, enemy, effects, config = G
   bullet.setEnemyHitCooldown(enemy.id, config.bullet.enemyHitCooldownFrames);
   const killed = enemy.takeDamage();
   effects.createParticles(enemy.x, enemy.y, 5, enemy.color);
+  reboundBulletFromEnemy(bullet, enemy, config.bullet);
 
   if (killed) {
     enemy.active = false;
@@ -158,7 +159,6 @@ export function resolveBulletEnemyCollision({ bullet, enemy, effects, config = G
     return { hit: true, killed: true };
   }
 
-  reboundBulletFromEnemy(bullet, enemy, config.bullet);
   effects.audio.enemyHit();
   effects.addScreenShake(config.feedback.enemyHitShake);
   effects.freezeFrames(config.feedback.enemyHitFreezeFrames);

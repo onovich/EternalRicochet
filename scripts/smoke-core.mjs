@@ -241,6 +241,25 @@ function smokeEnemyReboundAndCooldown() {
   assert.equal(tank.hp, hpAfterFirstHit);
 }
 
+function smokeEnemyKillReboundBeforeDamping() {
+  const bullet = new Bullet();
+  const chaser = new Enemy(160, 120, "chaser");
+  bullet.fireFrom({ x: 130, y: 120 }, 0, { speed: 15 });
+  bullet.x = 145;
+  bullet.y = 120;
+
+  const hit = resolveBulletEnemyCollision({ bullet, enemy: chaser, effects });
+
+  assert.equal(hit.hit, true);
+  assert.equal(hit.killed, true);
+  assert.equal(chaser.active, false);
+  assert.ok(bullet.vx < 0);
+  assert.ok(
+    magnitude({ x: bullet.vx, y: bullet.vy }) >=
+      GAME_CONFIG.bullet.minEnemyBounceSpeed * GAME_CONFIG.bullet.killDamping,
+  );
+}
+
 function smokeComboScoring() {
   const combo = new ComboState(GAME_CONFIG.combo);
 
@@ -1300,6 +1319,7 @@ smokeChargedShotSpeedClamp();
 smokeChargedMouseInputRelease();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
+smokeEnemyKillReboundBeforeDamping();
 smokeComboScoring();
 smokeObstacleLayoutAndBounce();
 smokeMovingObstacleDeterminismAndBounds();
