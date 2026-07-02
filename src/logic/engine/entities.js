@@ -1,6 +1,6 @@
 import { GAME_CONFIG } from "../../data/gameConfig.js";
 import { resolveBulletWallBounce } from "./collisions.js";
-import { clampMagnitude } from "./vectorMath.js";
+import { clampMagnitude, normalize } from "./vectorMath.js";
 
 let nextEnemyId = 1;
 
@@ -19,22 +19,31 @@ export class Player {
     this.invulnTime = 0;
     this.color = config.color;
     this.wasHitThisFrame = false;
+    this.dashTime = 0;
+    this.dashCooldown = 0;
+    this.evasionTime = 0;
+    this.lastMoveVector = { x: 0, y: 0 };
   }
 
   update({ moveVector, bounds }) {
     this.wasHitThisFrame = false;
-
     if (moveVector.x !== 0 || moveVector.y !== 0) {
+      this.lastMoveVector = normalize(moveVector);
+    }
+
+    if (this.dashTime <= 0 && (moveVector.x !== 0 || moveVector.y !== 0)) {
       this.vx += moveVector.x * this.config.acceleration;
       this.vy += moveVector.y * this.config.acceleration;
     }
 
-    this.vx *= this.friction;
-    this.vy *= this.friction;
+    if (this.dashTime <= 0) {
+      this.vx *= this.friction;
+      this.vy *= this.friction;
 
-    const clamped = clampMagnitude({ x: this.vx, y: this.vy }, 0, this.speed);
-    this.vx = clamped.x;
-    this.vy = clamped.y;
+      const clamped = clampMagnitude({ x: this.vx, y: this.vy }, 0, this.speed);
+      this.vx = clamped.x;
+      this.vy = clamped.y;
+    }
     this.x += this.vx;
     this.y += this.vy;
 
@@ -44,6 +53,9 @@ export class Player {
     if (this.y > bounds.height - this.radius) this.y = bounds.height - this.radius;
 
     if (this.invulnTime > 0) this.invulnTime -= 1;
+    if (this.dashTime > 0) this.dashTime -= 1;
+    if (this.dashCooldown > 0) this.dashCooldown -= 1;
+    if (this.evasionTime > 0) this.evasionTime -= 1;
   }
 
   applyShotRecoil(angle) {
@@ -51,8 +63,52 @@ export class Player {
     this.vy -= Math.sin(angle) * this.config.shotRecoil;
   }
 
+  startDash(direction) {
+    if (!this.canDash()) return false;
+
+    const dashConfig = this.config.dash ?? {};
+    const fallback = dashConfig.fallbackDirection ?? { x: 1, y: 0 };
+    const dashDirection = normalize(direction, fallback);
+    const speed = Number.isFinite(dashConfig.speed) ? dashConfig.speed : this.speed;
+    this.vx = dashDirection.x * speed;
+    this.vy = dashDirection.y * speed;
+    this.dashTime = safeFrameCount(dashConfig.durationFrames);
+    this.dashCooldown = safeFrameCount(dashConfig.cooldownFrames);
+    this.evasionTime = safeFrameCount(dashConfig.evasionFrames);
+    return true;
+  }
+
+  canDash() {
+    return this.dashTime <= 0 && this.dashCooldown <= 0;
+  }
+
+  isDashing() {
+    return this.dashTime > 0;
+  }
+
+  isEvading() {
+    return this.evasionTime > 0;
+  }
+
+  canTakeDamage() {
+    return this.invulnTime <= 0 && !this.isEvading();
+  }
+
+  getLastMoveVector() {
+    return this.lastMoveVector;
+  }
+
+  getDashState() {
+    return {
+      active: this.isDashing(),
+      evading: this.isEvading(),
+      cooldown: this.dashCooldown,
+      frames: this.dashTime,
+    };
+  }
+
   hit() {
-    if (this.invulnTime > 0) {
+    if (!this.canTakeDamage()) {
       return { tookDamage: false, killed: false };
     }
 
@@ -336,6 +392,11 @@ function resolveMotionOffset(type, t, amplitudeX, amplitudeY) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function safeFrameCount(value) {
+  if (!Number.isFinite(Number(value))) return 0;
+  return Math.max(0, Math.floor(Number(value)));
 }
 
 export class EnemyProjectile {

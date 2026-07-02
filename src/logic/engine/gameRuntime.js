@@ -278,6 +278,23 @@ export function createGameRuntime({
     updateHud();
   }
 
+  function dashIfRequested(moveVector) {
+    if (!input.consumeDash()) return;
+    if (
+      player.startDash(
+        resolveDashDirection({
+          moveVector,
+          lastMoveVector: player.getLastMoveVector(),
+          aimVector: input.getAimDirection(player),
+          fallback: runConfig.player.dash.fallbackDirection,
+        }),
+      )
+    ) {
+      createParticles(player.x, player.y, 8, player.color);
+      addScreenShake(config.feedback.obstacleBounceShake);
+    }
+  }
+
   function activateUltimateIfRequested() {
     if (!input.consumeUltimate()) return;
     if (!ultimateState.consume()) {
@@ -327,7 +344,9 @@ export function createGameRuntime({
 
     frameCount += 1;
     updateObstacles();
-    player.update({ moveVector: input.getMoveVector(), bounds: getBounds() });
+    const moveVector = input.getMoveVector();
+    dashIfRequested(moveVector);
+    player.update({ moveVector, bounds: getBounds() });
     for (const obstacle of obstacles) {
       resolveCircleObstacleSeparation(player, obstacle);
     }
@@ -516,7 +535,7 @@ export function createGameRuntime({
       gameState,
       score,
       frameCount,
-      player: player ? { hp: player.hp, x: player.x, y: player.y } : null,
+      player: player ? { hp: player.hp, x: player.x, y: player.y, dash: player.getDashState() } : null,
       bullet: {
         active: bulletPool.getPrimary().active,
         isRecalling: bulletPool.getPrimary().isRecalling,
@@ -587,6 +606,15 @@ export function createGameRuntime({
     };
   }
 
+  function resolveDashDirection({ moveVector, lastMoveVector, aimVector, fallback }) {
+    return (
+      normalizeNonZero(moveVector) ??
+      normalizeNonZero(lastMoveVector) ??
+      normalizeNonZero(aimVector) ??
+      normalizeNonZero(fallback) ?? { x: 1, y: 0 }
+    );
+  }
+
   return {
     start,
     initGame,
@@ -609,4 +637,11 @@ export function createGameRuntime({
       runConfig,
     }),
   };
+}
+
+function normalizeNonZero(vector) {
+  if (!vector) return null;
+  const length = Math.hypot(vector.x, vector.y);
+  if (length <= Number.EPSILON) return null;
+  return { x: vector.x / length, y: vector.y / length };
 }

@@ -7,6 +7,7 @@ import {
   resolveBulletEnemyCollision,
   resolveBulletObstacleCollision,
   resolveBulletWallBounce,
+  resolvePlayerEnemyCollision,
   resolvePlayerProjectileCollision,
   resolveProjectileObstacleCollision,
   resolveProjectileWallCollision,
@@ -218,6 +219,36 @@ function smokeUltimateInputLatch() {
   assert.equal(input.consumeUltimate(), false);
 }
 
+function smokeDashRecallInputRebind() {
+  const windowRef = createInputTestWindow();
+  const input = createInputController({
+    canvas: { width: 320, height: 240 },
+    getGameState: () => "PLAYING",
+    getBulletActive: () => false,
+    windowRef,
+  });
+
+  windowRef.dispatch("keydown", { key: " " });
+  assert.equal(input.consumeDash(), true);
+  assert.equal(input.consumeDash(), false);
+  assert.equal(input.isRecallRequested(), false);
+
+  windowRef.dispatch("keydown", { key: "r" });
+  assert.equal(input.isRecallRequested(), true);
+  input.clearRecallLatch();
+  assert.equal(input.isRecallRequested(), true);
+  windowRef.dispatch("keyup", { key: "r" });
+  input.clearRecallLatch();
+  assert.equal(input.isRecallRequested(), false);
+
+  windowRef.dispatch("mousedown", { button: 2 });
+  assert.equal(input.isRecallRequested(), true);
+  input.clearRecallLatch();
+  assert.equal(input.isRecallRequested(), true);
+  windowRef.dispatch("mouseup", { button: 2 });
+  assert.equal(input.isRecallRequested(), false);
+}
+
 function smokeWallBounceEnergy() {
   const bullet = new Bullet();
   bullet.fireFrom({ x: 4, y: 100 }, Math.PI);
@@ -405,6 +436,47 @@ function smokeShooterProjectileLifecycle() {
   const playerHit = resolvePlayerProjectileCollision({ player, projectile: hitProjectile, effects });
   assert.equal(playerHit.hit, true);
   assert.equal(player.hp, GAME_CONFIG.player.hp - 1);
+}
+
+function smokePlayerDashEvasion() {
+  const bounds = { width: 420, height: 260 };
+  const player = new Player(bounds);
+  const hp = player.hp;
+
+  assert.equal(player.startDash({ x: 1, y: 0 }), true);
+  assert.equal(player.getDashState().active, true);
+  assert.equal(player.hit().tookDamage, false);
+  assert.equal(player.hp, hp);
+
+  const projectile = {
+    active: true,
+    x: player.x,
+    y: player.y,
+    radius: GAME_CONFIG.enemyProjectile.radius,
+    color: GAME_CONFIG.enemyProjectile.color,
+  };
+  const projectileHit = resolvePlayerProjectileCollision({ player, projectile, effects });
+  assert.equal(projectileHit.hit, true);
+  assert.equal(projectile.active, false);
+  assert.equal(player.hp, hp);
+
+  const enemy = new Enemy(player.x, player.y, "chaser");
+  const enemyHit = resolvePlayerEnemyCollision({ player, enemy, effects });
+  assert.equal(enemyHit.collided, true);
+  assert.equal(player.hp, hp);
+
+  const beforeX = player.x;
+  player.update({ moveVector: { x: 0, y: 0 }, bounds });
+  assert.ok(player.x > beforeX);
+  assert.equal(player.startDash({ x: 1, y: 0 }), false);
+
+  for (let i = 0; i < GAME_CONFIG.player.dash.evasionFrames; i += 1) {
+    player.update({ moveVector: { x: 0, y: 0 }, bounds });
+  }
+  assert.equal(player.isEvading(), false);
+  const damage = player.hit();
+  assert.equal(damage.tookDamage, true);
+  assert.equal(player.hp, hp - 1);
 }
 
 function smokeUltimateStateAndRadialClear() {
@@ -1445,6 +1517,7 @@ smokeBulletPoolAmmoState();
 smokeChargedShotSpeedClamp();
 smokeChargedMouseInputRelease();
 smokeUltimateInputLatch();
+smokeDashRecallInputRebind();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeEnemyKillReboundBeforeDamping();
@@ -1453,6 +1526,7 @@ smokeObstacleLayoutAndBounce();
 smokeMovingObstacleDeterminismAndBounds();
 smokeMovingObstacleRelativeBounce();
 smokeShooterProjectileLifecycle();
+smokePlayerDashEvasion();
 smokeUltimateStateAndRadialClear();
 smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();

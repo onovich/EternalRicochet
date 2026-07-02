@@ -225,13 +225,22 @@ export function createRenderer({
   function drawPlayer(player, canFire, frameCount) {
     if (player.invulnTime > 0 && Math.floor(frameCount / 4) % 2 === 0) return;
 
+    const dashState = player.getDashState?.() ?? { active: false, evading: false };
     ctx.beginPath();
     ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-    ctx.fillStyle = player.color;
-    ctx.shadowBlur = scaleGlow(15);
-    ctx.shadowColor = player.color;
+    ctx.fillStyle = dashState.evading ? "#ffffff" : player.color;
+    ctx.shadowBlur = scaleGlow(dashState.active ? 26 : 15);
+    ctx.shadowColor = dashState.evading ? "#facc15" : player.color;
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    if (dashState.evading) {
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.radius + 8, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(250, 204, 21, 0.65)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
 
     ctx.beginPath();
     ctx.arc(player.x, player.y, player.radius * 0.4, 0, Math.PI * 2);

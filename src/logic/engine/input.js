@@ -4,7 +4,7 @@ export function createInputController({
   getBulletActive,
   windowRef = window,
 }) {
-  const keys = { w: false, a: false, s: false, d: false, space: false };
+  const keys = { w: false, a: false, s: false, d: false, space: false, r: false };
   const mouse = {
     x: canvas.width / 2,
     y: canvas.height / 2,
@@ -15,6 +15,7 @@ export function createInputController({
   const leftStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, dx: 0, dy: 0 };
   const rightStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, isDragging: false };
   let recallTriggered = false;
+  let dashTriggered = false;
   let ultimateTriggered = false;
   let mouseChargeFrames = 0;
   let touchChargeFrames = 0;
@@ -28,7 +29,9 @@ export function createInputController({
     if (key === "s" || event.key === "ArrowDown") keys.s = value;
     if (key === "d" || event.key === "ArrowRight") keys.d = value;
     if (event.key === " ") keys.space = value;
-    if (event.key === " " && value) recallTriggered = true;
+    if (key === "r") keys.r = value;
+    if (key === "r" && value) recallTriggered = true;
+    if (event.key === " " && value && !event.repeat) dashTriggered = true;
     if (key === "f" && value && !event.repeat) ultimateTriggered = true;
   }
 
@@ -220,7 +223,7 @@ export function createInputController({
   }
 
   function isRecallRequested() {
-    return keys.space || mouse.rightDown || recallTriggered;
+    return keys.r || mouse.rightDown || recallTriggered;
   }
 
   function clearRecallLatch() {
@@ -233,10 +236,17 @@ export function createInputController({
     return requested;
   }
 
+  function consumeDash() {
+    const requested = dashTriggered;
+    dashTriggered = false;
+    return requested;
+  }
+
   function resetTransient() {
     mouse.leftDown = false;
     mouse.rightDown = false;
     recallTriggered = false;
+    dashTriggered = false;
     ultimateTriggered = false;
     pendingMouseShot = null;
     pendingTouchShot = null;
@@ -258,6 +268,17 @@ export function createInputController({
     return { active: false, frames: 0, source: null };
   }
 
+  function getAimDirection(player) {
+    const aim = getAimState();
+    if (aim.isTouchDevice && aim.rightStick.active && aim.rightStick.isDragging) {
+      return normalizeVector({
+        x: aim.rightStick.x - aim.rightStick.ox,
+        y: aim.rightStick.y - aim.rightStick.oy,
+      });
+    }
+    return normalizeVector({ x: aim.mouse.x - player.x, y: aim.mouse.y - player.y });
+  }
+
   return {
     getMoveVector,
     consumeShot,
@@ -265,8 +286,10 @@ export function createInputController({
     isRecallRequested,
     clearRecallLatch,
     consumeUltimate,
+    consumeDash,
     resetTransient,
     getAimState,
+    getAimDirection,
     getChargeState,
     updateCharge,
   };
@@ -282,4 +305,10 @@ function resolveCharge(frames, config = {}) {
     chargeRatio: ratio,
     chargePower: minPower + ratio * (maxPower - minPower),
   };
+}
+
+function normalizeVector(vector) {
+  const length = Math.hypot(vector.x, vector.y);
+  if (length <= Number.EPSILON) return { x: 0, y: 0 };
+  return { x: vector.x / length, y: vector.y / length };
 }
