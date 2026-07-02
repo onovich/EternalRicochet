@@ -9,6 +9,7 @@ export function createHud(documentRef = document) {
   const totalCredits = documentRef.getElementById("total-credits");
   const healthBar = documentRef.getElementById("health-bar");
   const ammoDisplay = documentRef.getElementById("ammo-display");
+  const ultimateDisplay = documentRef.getElementById("ultimate-display");
   const comboDisplay = documentRef.getElementById("combo-display");
   const score = documentRef.getElementById("score");
   const scoreContainer = documentRef.getElementById("score-container");
@@ -30,13 +31,18 @@ export function createHud(documentRef = document) {
     hud.classList.add("hidden");
   }
 
-  function update({ hp, maxHp, bulletActive, ammoState, scoreValue, combo }) {
+  function update({ hp, maxHp, bulletActive, ammoState, ultimate, scoreValue, combo }) {
     healthBar.innerHTML = Array.from({ length: maxHp }, (_, index) => {
       const className = index < hp ? "" : ' class="text-gray-700"';
       return `<span${className}>\u2665</span>`;
     }).join("");
     const ammo = ammoState ?? { available: bulletActive ? 0 : 1, total: 1 };
     ammoDisplay.innerText = `${ammo.available} / ${ammo.total}`;
+    if (ultimateDisplay) {
+      ultimateDisplay.innerText = `${ultimate?.charges ?? 0}`;
+      ultimateDisplay.classList.toggle("text-gray-600", !ultimate?.canUse);
+      ultimateDisplay.classList.toggle("text-fuchsia-300", Boolean(ultimate?.canUse));
+    }
     if (comboDisplay) {
       comboDisplay.innerText = combo?.visible ? `COMBO X${combo.multiplier} / ${combo.killCount}` : "";
       comboDisplay.classList.toggle("hidden", !combo?.visible);

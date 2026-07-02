@@ -15,6 +15,7 @@ export function createInputController({
   const leftStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, dx: 0, dy: 0 };
   const rightStick = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, isDragging: false };
   let recallTriggered = false;
+  let ultimateTriggered = false;
   let mouseChargeFrames = 0;
   let touchChargeFrames = 0;
   let pendingMouseShot = null;
@@ -28,6 +29,7 @@ export function createInputController({
     if (key === "d" || event.key === "ArrowRight") keys.d = value;
     if (event.key === " ") keys.space = value;
     if (event.key === " " && value) recallTriggered = true;
+    if (key === "f" && value && !event.repeat) ultimateTriggered = true;
   }
 
   windowRef.addEventListener("keydown", (event) => setKey(event, true));
@@ -225,10 +227,17 @@ export function createInputController({
     recallTriggered = false;
   }
 
+  function consumeUltimate() {
+    const requested = ultimateTriggered;
+    ultimateTriggered = false;
+    return requested;
+  }
+
   function resetTransient() {
     mouse.leftDown = false;
     mouse.rightDown = false;
     recallTriggered = false;
+    ultimateTriggered = false;
     pendingMouseShot = null;
     pendingTouchShot = null;
     mouseChargeFrames = 0;
@@ -255,6 +264,7 @@ export function createInputController({
     consumeShootAngle: (player) => consumeShot(player)?.angle ?? null,
     isRecallRequested,
     clearRecallLatch,
+    consumeUltimate,
     resetTransient,
     getAimState,
     getChargeState,

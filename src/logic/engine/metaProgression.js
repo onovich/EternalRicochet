@@ -158,6 +158,7 @@ export function createEffectiveRunConfig(metaState, baseConfig = GAME_CONFIG) {
   const piercerLevel = getUpgradeLevel("armorPiercer", state, baseConfig.metaProgression);
   const shieldLevel = getUpgradeLevel("energyShield", state, baseConfig.metaProgression);
   const multiballLevel = getUpgradeLevel("multiball", state, baseConfig.metaProgression);
+  const ultimateLevel = getUpgradeLevel("ultimateCap", state, baseConfig.metaProgression);
 
   return {
     ...baseConfig,
@@ -176,6 +177,13 @@ export function createEffectiveRunConfig(metaState, baseConfig = GAME_CONFIG) {
       killDamping: Math.min(
         upgrades.armorPiercer.maxKillDamping,
         baseConfig.bullet.killDamping + piercerLevel * upgrades.armorPiercer.killDampingBonusPerLevel,
+      ),
+    },
+    ultimate: {
+      ...baseConfig.ultimate,
+      charges: Math.min(
+        baseConfig.ultimate.maxCharges,
+        baseConfig.ultimate.baseCharges + ultimateLevel * upgrades.ultimateCap.chargesPerLevel,
       ),
     },
   };

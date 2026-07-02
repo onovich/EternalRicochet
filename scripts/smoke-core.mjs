@@ -40,6 +40,7 @@ import {
   readSettings,
   sanitizeSettings,
 } from "../src/logic/engine/settings.js";
+import { createUltimateState, resolveRadialClear } from "../src/logic/engine/ultimate.js";
 import {
   createLeaderboardError,
   LEADERBOARD_CONTRACT,
@@ -194,6 +195,27 @@ function smokeChargedMouseInputRelease() {
   const quick = input.consumeShot({ x: 100, y: 120 }, GAME_CONFIG.bullet.charge);
   assert.equal(quick.chargeFrames, 0);
   assert.equal(quick.chargePower, GAME_CONFIG.bullet.charge.minPower);
+}
+
+function smokeUltimateInputLatch() {
+  const windowRef = createInputTestWindow();
+  const input = createInputController({
+    canvas: { width: 320, height: 240 },
+    getGameState: () => "PLAYING",
+    getBulletActive: () => false,
+    windowRef,
+  });
+
+  windowRef.dispatch("keydown", { key: "f" });
+  assert.equal(input.consumeUltimate(), true);
+  assert.equal(input.consumeUltimate(), false);
+
+  windowRef.dispatch("keydown", { key: "f", repeat: true });
+  assert.equal(input.consumeUltimate(), false);
+
+  windowRef.dispatch("keydown", { key: "F" });
+  input.resetTransient();
+  assert.equal(input.consumeUltimate(), false);
 }
 
 function smokeWallBounceEnergy() {
@@ -385,6 +407,60 @@ function smokeShooterProjectileLifecycle() {
   assert.equal(player.hp, GAME_CONFIG.player.hp - 1);
 }
 
+function smokeUltimateStateAndRadialClear() {
+  const ultimateState = createUltimateState({ charges: 2, config: GAME_CONFIG.ultimate });
+  assert.deepEqual(ultimateState.getState(), {
+    charges: 2,
+    maxCharges: GAME_CONFIG.ultimate.maxCharges,
+    canUse: true,
+  });
+  assert.equal(ultimateState.consume(), true);
+  assert.equal(ultimateState.getCharges(), 1);
+  ultimateState.reset(99);
+  assert.equal(ultimateState.getCharges(), GAME_CONFIG.ultimate.maxCharges);
+
+  const closeEnemy = new Enemy(120, 100, "chaser");
+  const farEnemy = new Enemy(480, 100, "tank");
+  const closeProjectile = { active: true, x: 128, y: 108, color: GAME_CONFIG.enemyProjectile.color };
+  const farProjectile = { active: true, x: 520, y: 100, color: GAME_CONFIG.enemyProjectile.color };
+  const enemies = [closeEnemy, farEnemy];
+  const projectiles = [closeProjectile, farProjectile];
+  const calls = { score: 0, particles: 0, shakes: 0, freezes: 0 };
+
+  const result = resolveRadialClear({
+    origin: { x: 100, y: 100 },
+    enemies,
+    projectiles,
+    config: GAME_CONFIG,
+    effects: {
+      addScore(points) {
+        calls.score += points;
+      },
+      addScreenShake(amount) {
+        calls.shakes += amount;
+      },
+      createParticles() {
+        calls.particles += 1;
+      },
+      freezeFrames(frames) {
+        calls.freezes += frames;
+      },
+    },
+  });
+
+  assert.deepEqual(result, { enemiesCleared: 1, projectilesCleared: 1 });
+  assert.deepEqual(enemies, [farEnemy]);
+  assert.deepEqual(projectiles, [farProjectile]);
+  assert.equal(closeEnemy.active, false);
+  assert.equal(closeProjectile.active, false);
+  assert.equal(farEnemy.active, true);
+  assert.equal(farProjectile.active, true);
+  assert.equal(calls.score, closeEnemy.scoreVal);
+  assert.equal(calls.particles, 3);
+  assert.ok(calls.shakes > 0);
+  assert.ok(calls.freezes > 0);
+}
+
 function smokeMetaProgressionPersistence() {
   const storage = createMemoryStorage();
   const defaultState = createDefaultMetaState();
@@ -444,6 +520,14 @@ function smokeMetaProgressionEconomy() {
   assert.equal(multiballPurchase.purchased, true);
   assert.equal(multiballPurchase.state.credits, 0);
   assert.equal(multiballPurchase.state.upgrades.multiball, 1);
+
+  const ultimatePurchase = purchaseUpgrade(
+    sanitizeMetaState({ credits: GAME_CONFIG.metaProgression.upgrades.ultimateCap.baseCost }),
+    "ultimateCap",
+  );
+  assert.equal(ultimatePurchase.purchased, true);
+  assert.equal(ultimatePurchase.state.credits, 0);
+  assert.equal(ultimatePurchase.state.upgrades.ultimateCap, 1);
 
   const maxedState = sanitizeMetaState({
     credits: 999,
@@ -531,6 +615,7 @@ function smokeMetaProgressionUpgradeEffects() {
       armorPiercer: 3,
       energyShield: 1,
       multiball: 2,
+      ultimateCap: 2,
     },
   });
   const effective = createEffectiveRunConfig(state);
@@ -557,16 +642,26 @@ function smokeMetaProgressionUpgradeEffects() {
     GAME_CONFIG.bullet.baseCount +
       2 * GAME_CONFIG.metaProgression.upgrades.multiball.ballsPerLevel,
   );
+  assert.equal(
+    effective.ultimate.charges,
+    GAME_CONFIG.ultimate.baseCharges +
+      2 * GAME_CONFIG.metaProgression.upgrades.ultimateCap.chargesPerLevel,
+  );
   assert.equal(GAME_CONFIG.player.hp, 3);
   assert.equal(GAME_CONFIG.bullet.recallForce, 2);
   assert.equal(GAME_CONFIG.bullet.totalCount, undefined);
+  assert.equal(GAME_CONFIG.ultimate.charges, undefined);
 
   const capped = createEffectiveRunConfig(
     sanitizeMetaState({
-      upgrades: { multiball: GAME_CONFIG.metaProgression.upgrades.multiball.maxLevel },
+      upgrades: {
+        multiball: GAME_CONFIG.metaProgression.upgrades.multiball.maxLevel,
+        ultimateCap: GAME_CONFIG.metaProgression.upgrades.ultimateCap.maxLevel,
+      },
     }),
   );
   assert.equal(capped.bullet.totalCount, GAME_CONFIG.bullet.maxCount);
+  assert.equal(capped.ultimate.charges, GAME_CONFIG.ultimate.maxCharges);
 }
 
 function smokeRenderQualityResolution() {
@@ -1349,6 +1444,7 @@ smokePhase13ConfigDefaults();
 smokeBulletPoolAmmoState();
 smokeChargedShotSpeedClamp();
 smokeChargedMouseInputRelease();
+smokeUltimateInputLatch();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeEnemyKillReboundBeforeDamping();
@@ -1357,6 +1453,7 @@ smokeObstacleLayoutAndBounce();
 smokeMovingObstacleDeterminismAndBounds();
 smokeMovingObstacleRelativeBounce();
 smokeShooterProjectileLifecycle();
+smokeUltimateStateAndRadialClear();
 smokeMetaProgressionPersistence();
 smokeMetaProgressionEconomy();
 smokeMetaProgressionStore();

@@ -28,6 +28,7 @@ import { createRenderer } from "./renderer.js";
 import { resolveRenderQuality } from "./renderQuality.js";
 import { ComboState } from "./scoring.js";
 import { createSettingsStore } from "./settings.js";
+import { createUltimateState, resolveRadialClear } from "./ultimate.js";
 import { createSettingsPanel } from "../../view/components/settingsPanel.js";
 import { createUpgradeShop } from "../../view/components/upgradeShop.js";
 
@@ -50,6 +51,7 @@ export function createGameRuntime({
   let freezeFrames = 0;
   let player = null;
   let bulletPool = createBulletPool({ total: config.bullet.baseCount, config: config.bullet });
+  let ultimateState = createUltimateState({ charges: config.ultimate.baseCharges, config: config.ultimate });
   let enemies = [];
   let obstacles = [];
   let projectiles = [];
@@ -59,6 +61,7 @@ export function createGameRuntime({
   let started = false;
   let shooterIntroduced = false;
   let lastSettlement = null;
+  let lastUltimate = null;
   const settingsStore = createSettingsStore({
     storage: windowRef.localStorage,
     config: config.settings,
@@ -144,6 +147,10 @@ export function createGameRuntime({
       total: runConfig.bullet.totalCount ?? runConfig.bullet.baseCount,
       config: runConfig.bullet,
     });
+    ultimateState = createUltimateState({
+      charges: runConfig.ultimate.charges ?? runConfig.ultimate.baseCharges,
+      config: runConfig.ultimate,
+    });
     enemies = [];
     obstacles = createObstacleLayout(getBounds(), config.obstacles);
     projectiles = [];
@@ -156,6 +163,7 @@ export function createGameRuntime({
     spawnTimer = 0;
     currentSpawnInterval = config.enemy.baseSpawnInterval;
     shooterIntroduced = false;
+    lastUltimate = null;
     applyDevStressSeed();
     runSettlement.reset();
     lastSettlement = null;
@@ -233,6 +241,7 @@ export function createGameRuntime({
       maxHp: player.maxHp,
       bulletActive: ammoState.available <= 0,
       ammoState,
+      ultimate: ultimateState.getState(),
       scoreValue: score,
       combo: combo.getHudState(),
     });
@@ -266,6 +275,27 @@ export function createGameRuntime({
     input.clearRecallLatch();
     audio.sfx.shoot();
     addScreenShake(config.feedback.shotShake);
+    updateHud();
+  }
+
+  function activateUltimateIfRequested() {
+    if (!input.consumeUltimate()) return;
+    if (!ultimateState.consume()) {
+      updateHud();
+      return;
+    }
+
+    lastUltimate = {
+      frame: frameCount,
+      ...resolveRadialClear({
+        origin: player,
+        enemies,
+        projectiles,
+        effects,
+        config: runConfig,
+      }),
+      chargesRemaining: ultimateState.getCharges(),
+    };
     updateHud();
   }
 
@@ -303,6 +333,7 @@ export function createGameRuntime({
     }
     input.updateCharge();
     fireIfRequested();
+    activateUltimateIfRequested();
     for (const bullet of bulletPool.getActive()) {
       handleBulletEvents(
         bullet.update({
@@ -501,6 +532,10 @@ export function createGameRuntime({
       })),
       ammo: bulletPool.getAmmoState(),
       charge: input.getChargeState(),
+      ultimate: {
+        ...ultimateState.getState(),
+        last: lastUltimate,
+      },
       enemies: enemies.map((enemy) => ({
         type: enemy.type,
         hp: enemy.hp,
@@ -536,6 +571,8 @@ export function createGameRuntime({
         playerHp: runConfig.player.hp,
         bulletRecallForce: runConfig.bullet.recallForce,
         bulletKillDamping: runConfig.bullet.killDamping,
+        bulletTotalCount: runConfig.bullet.totalCount ?? runConfig.bullet.baseCount,
+        ultimateCharges: runConfig.ultimate.charges ?? runConfig.ultimate.baseCharges,
       },
     };
   }
@@ -566,6 +603,7 @@ export function createGameRuntime({
       projectiles,
       particles,
       combo: combo.getHudState(),
+      ultimate: ultimateState.getState(),
       meta: metaStore.getState(),
       settlement: lastSettlement,
       runConfig,
