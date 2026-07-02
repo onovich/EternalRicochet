@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { GAME_CONFIG } from "../src/data/gameConfig.js";
 import { createAudioSystem } from "../src/logic/engine/audio.js";
+import { createBulletPool } from "../src/logic/engine/bulletPool.js";
 import {
   resolveBulletEnemyCollision,
   resolveBulletObstacleCollision,
@@ -122,6 +123,29 @@ function smokePhase13ConfigDefaults() {
 
   const motionTypes = GAME_CONFIG.obstacles.layout.map((obstacle) => obstacle.motion?.type);
   assert.deepEqual(motionTypes, ["horizontal", "ellipse", "lissajous"]);
+}
+
+function smokeBulletPoolAmmoState() {
+  const pool = createBulletPool({ total: 3, config: GAME_CONFIG.bullet });
+
+  assert.equal(pool.bullets.length, 3);
+  assert.deepEqual(pool.getAmmoState(), { active: 0, available: 3, total: 3 });
+  assert.equal(pool.hasAvailable(), true);
+
+  const first = pool.getAvailable();
+  first.fireFrom({ x: 100, y: 100 }, 0);
+
+  assert.equal(first.id, "bullet-1");
+  assert.deepEqual(pool.getAmmoState(), { active: 1, available: 2, total: 3 });
+  assert.equal(pool.getActive()[0], first);
+
+  const second = pool.getAvailable();
+  second.fireFrom({ x: 100, y: 100 }, Math.PI / 2);
+  assert.deepEqual(pool.getAmmoState(), { active: 2, available: 1, total: 3 });
+
+  first.collect();
+  assert.equal(pool.getAvailable(), first);
+  assert.deepEqual(pool.getAmmoState(), { active: 1, available: 2, total: 3 });
 }
 
 function smokeWallBounceEnergy() {
@@ -1160,6 +1184,7 @@ function hasProjectileTrailStroke(ctx) {
 
 smokeBulletFireReset();
 smokePhase13ConfigDefaults();
+smokeBulletPoolAmmoState();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeComboScoring();

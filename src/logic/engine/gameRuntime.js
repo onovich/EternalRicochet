@@ -10,7 +10,8 @@ import {
   resolveProjectileWallCollision,
 } from "./collisions.js";
 import { resolveDevStressSeed } from "./devStress.js";
-import { Bullet, Enemy, EnemyProjectile, Player } from "./entities.js";
+import { createBulletPool } from "./bulletPool.js";
+import { Enemy, EnemyProjectile, Player } from "./entities.js";
 import { createHud } from "./hud.js";
 import { createInputController } from "./input.js";
 import { createObstacleLayout } from "./level.js";
@@ -48,7 +49,7 @@ export function createGameRuntime({
   let shakeTime = 0;
   let freezeFrames = 0;
   let player = null;
-  let bullet = new Bullet(config.bullet);
+  let bulletPool = createBulletPool({ total: config.bullet.baseCount, config: config.bullet });
   let enemies = [];
   let obstacles = [];
   let projectiles = [];
@@ -94,7 +95,7 @@ export function createGameRuntime({
   const input = createInputController({
     canvas,
     getGameState,
-    getBulletActive: () => bullet.active,
+    getBulletActive: () => !bulletPool.hasAvailable(),
     windowRef,
   });
   const audio = createAudioSystem({
@@ -139,7 +140,10 @@ export function createGameRuntime({
   function initGame() {
     runConfig = createEffectiveRunConfig(metaStore.reload(), config);
     player = new Player(getBounds(), runConfig.player);
-    bullet = new Bullet(runConfig.bullet);
+    bulletPool = createBulletPool({
+      total: runConfig.bullet.totalCount ?? runConfig.bullet.baseCount,
+      config: runConfig.bullet,
+    });
     enemies = [];
     obstacles = createObstacleLayout(getBounds(), config.obstacles);
     projectiles = [];
@@ -223,10 +227,12 @@ export function createGameRuntime({
   }
 
   function updateHud() {
+    const ammoState = bulletPool.getAmmoState();
     hud.update({
       hp: player.hp,
       maxHp: player.maxHp,
-      bulletActive: bullet.active,
+      bulletActive: ammoState.available <= 0,
+      ammoState,
       scoreValue: score,
       combo: combo.getHudState(),
     });
@@ -251,6 +257,9 @@ export function createGameRuntime({
     const angle = input.consumeShootAngle(player);
     if (angle === null) return;
 
+    const bullet = bulletPool.getAvailable();
+    if (!bullet) return;
+
     bullet.fireFrom({ x: player.x, y: player.y }, angle);
     combo.reset();
     player.applyShotRecoil(angle);
@@ -260,7 +269,7 @@ export function createGameRuntime({
     updateHud();
   }
 
-  function handleBulletEvents(events) {
+  function handleBulletEvents(events, bullet) {
     for (const event of events) {
       if (event.type === "recall-start") {
         audio.sfx.recall();
@@ -292,13 +301,16 @@ export function createGameRuntime({
       resolveCircleObstacleSeparation(player, obstacle);
     }
     fireIfRequested();
-    handleBulletEvents(
-      bullet.update({
-        recallRequested: input.isRecallRequested(),
-        player,
-        bounds: getBounds(),
-      }),
-    );
+    for (const bullet of bulletPool.getActive()) {
+      handleBulletEvents(
+        bullet.update({
+          recallRequested: input.isRecallRequested(),
+          player,
+          bounds: getBounds(),
+        }),
+        bullet,
+      );
+    }
     handleBulletObstacleCollisions();
 
     for (let i = enemies.length - 1; i >= 0; i -= 1) {
@@ -313,7 +325,10 @@ export function createGameRuntime({
         endGame();
         return;
       }
-      resolveBulletEnemyCollision({ bullet, enemy, effects, config: runConfig });
+      for (const bullet of bulletPool.getActive()) {
+        resolveBulletEnemyCollision({ bullet, enemy, effects, config: runConfig });
+        if (!enemy.active) break;
+      }
       if (!enemy.active) enemies.splice(i, 1);
       else if (enemy.canShoot()) spawnEnemyProjectile(enemy);
     }
@@ -333,12 +348,14 @@ export function createGameRuntime({
   }
 
   function handleBulletObstacleCollisions() {
-    for (const obstacle of obstacles) {
-      const result = resolveBulletObstacleCollision({ bullet, obstacle, config: runConfig });
-      if (result.bounced) {
-        audio.sfx.bounce();
-        createParticles(bullet.x, bullet.y, 6, obstacle.color);
-        addScreenShake(config.feedback.obstacleBounceShake);
+    for (const bullet of bulletPool.getActive()) {
+      for (const obstacle of obstacles) {
+        const result = resolveBulletObstacleCollision({ bullet, obstacle, config: runConfig });
+        if (result.bounced) {
+          audio.sfx.bounce();
+          createParticles(bullet.x, bullet.y, 6, obstacle.color);
+          addScreenShake(config.feedback.obstacleBounceShake);
+        }
       }
     }
   }
@@ -423,10 +440,13 @@ export function createGameRuntime({
       updateMenuParticles();
     }
 
+    const ammoState = bulletPool.getAmmoState();
     renderer.render({
       gameState,
       player,
-      bullet,
+      bullet: bulletPool.getPrimary(),
+      bullets: bulletPool.bullets,
+      ammoState,
       enemies,
       obstacles,
       projectiles,
@@ -458,10 +478,19 @@ export function createGameRuntime({
       frameCount,
       player: player ? { hp: player.hp, x: player.x, y: player.y } : null,
       bullet: {
+        active: bulletPool.getPrimary().active,
+        isRecalling: bulletPool.getPrimary().isRecalling,
+        trailLength: bulletPool.getPrimary().trail.length,
+      },
+      bullets: bulletPool.bullets.map((bullet) => ({
+        id: bullet.id,
         active: bullet.active,
         isRecalling: bullet.isRecalling,
+        x: bullet.x,
+        y: bullet.y,
         trailLength: bullet.trail.length,
-      },
+      })),
+      ammo: bulletPool.getAmmoState(),
       enemies: enemies.map((enemy) => ({
         type: enemy.type,
         hp: enemy.hp,
@@ -507,7 +536,7 @@ export function createGameRuntime({
       obstacles: obstacles.length,
       projectiles: projectiles.length,
       particles: particles.length,
-      bulletActive: bullet.active,
+      bulletActive: bulletPool.getActive().length,
     };
   }
 
@@ -520,7 +549,8 @@ export function createGameRuntime({
       score,
       frameCount,
       player,
-      bullet,
+      bullet: bulletPool.getPrimary(),
+      bullets: bulletPool.bullets,
       enemies,
       obstacles,
       projectiles,

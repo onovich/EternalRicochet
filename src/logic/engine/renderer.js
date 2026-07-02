@@ -13,7 +13,22 @@ export function createRenderer({
     ...quality,
   };
 
-  function render({ gameState, player, bullet, enemies, obstacles, projectiles, particles, frameCount, shakeTime }) {
+  function render({
+    gameState,
+    player,
+    bullet,
+    bullets,
+    ammoState,
+    enemies,
+    obstacles,
+    projectiles,
+    particles,
+    frameCount,
+    shakeTime,
+  }) {
+    const renderBullets = bullets?.length ? bullets : [bullet].filter(Boolean);
+    const canFire = ammoState ? ammoState.available > 0 : !bullet?.active;
+
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = config.canvas.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -27,13 +42,13 @@ export function createRenderer({
     particles.forEach(drawParticle);
     if (gameState === "PLAYING") {
       projectiles.forEach(drawProjectile);
-      drawBullet(bullet);
+      renderBullets.forEach(drawBullet);
       enemies.forEach((enemy) => drawEnemy(enemy, player));
-      drawPlayer(player, bullet, frameCount);
+      drawPlayer(player, canFire, frameCount);
     }
     ctx.restore();
 
-    drawJoysticks(gameState, bullet);
+    drawJoysticks(gameState, canFire);
   }
 
   function applyScreenShake(shakeTime) {
@@ -192,7 +207,7 @@ export function createRenderer({
     ctx.restore();
   }
 
-  function drawPlayer(player, bullet, frameCount) {
+  function drawPlayer(player, canFire, frameCount) {
     if (player.invulnTime > 0 && Math.floor(frameCount / 4) % 2 === 0) return;
 
     ctx.beginPath();
@@ -207,11 +222,11 @@ export function createRenderer({
     ctx.arc(player.x, player.y, player.radius * 0.4, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff";
     ctx.fill();
-    drawAimLine(player, bullet);
+    drawAimLine(player, canFire);
   }
 
-  function drawAimLine(player, bullet) {
-    if (bullet.active) return;
+  function drawAimLine(player, canFire) {
+    if (!canFire) return;
 
     const aim = input.getAimState();
     if (aim.isTouchDevice && aim.rightStick.isDragging) {
@@ -245,7 +260,7 @@ export function createRenderer({
     }
   }
 
-  function drawJoysticks(gameState, bullet) {
+  function drawJoysticks(gameState, canFire) {
     const aim = input.getAimState();
     if (!aim.isTouchDevice || gameState !== "PLAYING") return;
 
@@ -264,7 +279,7 @@ export function createRenderer({
       ctx.fill();
     }
 
-    if (aim.rightStick.active && aim.rightStick.isDragging && !bullet.active) {
+    if (aim.rightStick.active && aim.rightStick.isDragging && canFire) {
       ctx.beginPath();
       ctx.arc(aim.rightStick.ox, aim.rightStick.oy, 30, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(255,0,0,0.05)";

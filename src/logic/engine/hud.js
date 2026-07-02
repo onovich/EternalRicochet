@@ -30,12 +30,13 @@ export function createHud(documentRef = document) {
     hud.classList.add("hidden");
   }
 
-  function update({ hp, maxHp, bulletActive, scoreValue, combo }) {
+  function update({ hp, maxHp, bulletActive, ammoState, scoreValue, combo }) {
     healthBar.innerHTML = Array.from({ length: maxHp }, (_, index) => {
       const className = index < hp ? "" : ' class="text-gray-700"';
       return `<span${className}>\u2665</span>`;
     }).join("");
-    ammoDisplay.innerText = bulletActive ? "0" : "1";
+    const ammo = ammoState ?? { available: bulletActive ? 0 : 1, total: 1 };
+    ammoDisplay.innerText = `${ammo.available} / ${ammo.total}`;
     if (comboDisplay) {
       comboDisplay.innerText = combo?.visible ? `COMBO X${combo.multiplier} / ${combo.killCount}` : "";
       comboDisplay.classList.toggle("hidden", !combo?.visible);
