@@ -91,6 +91,39 @@ function smokeBulletFireReset() {
   assert.ok(magnitude({ x: bullet.vx, y: bullet.vy }) > 20);
 }
 
+function smokePhase13ConfigDefaults() {
+  assert.equal(GAME_CONFIG.controls.recallKey, "r");
+  assert.equal(GAME_CONFIG.controls.dashKey, " ");
+  assert.equal(GAME_CONFIG.controls.ultimateKey, "f");
+
+  assert.equal(GAME_CONFIG.bullet.baseCount, 1);
+  assert.equal(GAME_CONFIG.bullet.maxCount, 4);
+  assert.ok(GAME_CONFIG.bullet.charge.minShotSpeed < GAME_CONFIG.bullet.charge.maxShotSpeed);
+  assert.ok(GAME_CONFIG.bullet.charge.framesToMax > 0);
+  assert.ok(GAME_CONFIG.bullet.pickup.settledCollectSpeedSq > GAME_CONFIG.bullet.collectSpeedSq);
+  assert.ok(GAME_CONFIG.bullet.pickup.minActiveFrames > 0);
+  assert.ok(GAME_CONFIG.bullet.pickup.minTravelDistance > GAME_CONFIG.player.radius);
+
+  assert.ok(GAME_CONFIG.player.dash.speed > GAME_CONFIG.player.speed);
+  assert.ok(GAME_CONFIG.player.dash.durationFrames > 0);
+  assert.ok(GAME_CONFIG.player.dash.cooldownFrames > GAME_CONFIG.player.dash.durationFrames);
+  assert.ok(GAME_CONFIG.player.dash.evasionFrames >= GAME_CONFIG.player.dash.durationFrames);
+
+  assert.equal(GAME_CONFIG.ultimate.baseCharges, 0);
+  assert.equal(GAME_CONFIG.ultimate.maxCharges, GAME_CONFIG.metaProgression.upgrades.ultimateCap.maxLevel);
+  assert.ok(GAME_CONFIG.ultimate.radius > GAME_CONFIG.player.radius);
+
+  assert.equal(GAME_CONFIG.metaProgression.upgrades.multiball.ballsPerLevel, 1);
+  assert.equal(GAME_CONFIG.metaProgression.upgrades.ultimateCap.chargesPerLevel, 1);
+  assert.equal(
+    GAME_CONFIG.bullet.baseCount + GAME_CONFIG.metaProgression.upgrades.multiball.maxLevel,
+    GAME_CONFIG.bullet.maxCount,
+  );
+
+  const motionTypes = GAME_CONFIG.obstacles.layout.map((obstacle) => obstacle.motion?.type);
+  assert.deepEqual(motionTypes, ["horizontal", "ellipse", "lissajous"]);
+}
+
 function smokeWallBounceEnergy() {
   const bullet = new Bullet();
   bullet.fireFrom({ x: 4, y: 100 }, Math.PI);
@@ -1126,6 +1159,7 @@ function hasProjectileTrailStroke(ctx) {
 }
 
 smokeBulletFireReset();
+smokePhase13ConfigDefaults();
 smokeWallBounceEnergy();
 smokeEnemyReboundAndCooldown();
 smokeComboScoring();
