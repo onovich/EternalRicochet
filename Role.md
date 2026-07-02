@@ -2,7 +2,7 @@
 
 workspace: D:\WebProjects\EternalRicochet
 created_at: 2026-07-01T16:46:09.9493994+08:00
-updated_at: 2026-07-02T03:13:45.3094496+08:00
+updated_at: 2026-07-02T12:13:45.7946966+08:00
 
 planner:
   role: architect
@@ -17,12 +17,12 @@ executor:
   evidence: current active executor thread in the same workspace.
 
 idempotency:
-  active_goal_guide: docs/phase-12-service-worker-offline-runtime-goal-mode-execution-guide.md
-  active_goal_phase: Phase 12 - Service Worker Offline Runtime Slice
+  active_goal_guide: docs/phase-13-charged-multiball-mobility-goal-mode-execution-guide.md
+  active_goal_phase: Phase 13 - Charged Multiball Mobility Slice
   last_planner_dispatch: 2026-07-01T23:11:38.0273241+08:00
-  last_planner_dispatch_status: sent
-  last_planner_dispatch_guide: docs/phase-12-service-worker-offline-runtime-goal-mode-execution-guide.md
-  last_planner_dispatch_commit: 8d3ae8f
+  last_planner_dispatch_status: pending
+  last_planner_dispatch_guide: docs/phase-13-charged-multiball-mobility-goal-mode-execution-guide.md
+  last_planner_dispatch_commit: pending
   last_executor_report_commit: 8f65870
   last_executor_report_status: READY_FOR_CHECK
   last_executor_report_at: 2026-07-02T03:13:45.3094496+08:00
@@ -36,5 +36,7 @@ route_constraints:
   no_phase_13_without_explicit_user_reopen: true
   backend_leaderboard_status: unapproved_candidate_only
   phase_12_scope: pwa_service_worker_app_shell_only
-  project_status: frozen_after_phase_12_acceptance
+  project_status: reopened_for_phase_13_gameplay_only
   last_freeze_report: docs/phase-12-planner-check-report.md
+  reopened_at: 2026-07-02T12:13:45.7946966+08:00
+  reopened_scope: charged_multiball_mobility_gameplay_only

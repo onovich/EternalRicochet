@@ -15,6 +15,7 @@ The project has been initialized as a Vite-powered static web app for local deve
 - Phase 11 completion evidence is recorded in `docs/phase-11-validation-report.md`; the project now has an offline UX/service-worker approval gate, future copy/stale-client/rollback/browser validation docs, and `npm run smoke:offline-gate` before any service-worker implementation.
 - Phase 12 completion evidence is recorded in `docs/phase-12-validation-report.md`; the service-worker runtime now has app-shell-only production caching, production-only registration, deferred-refresh UX, rollback validation, and browser/hosted evidence.
 - Project route boundary: after Phase 12 closes, active roadmap work stops. No Phase 13, backend leaderboard, real network submission, native packaging, new gameplay, new systems, or additional platform phase should be planned unless the user explicitly reopens the project.
+- Phase 13 execution is planned in `docs/phase-13-charged-multiball-mobility-goal-mode-execution-guide.md`; the user explicitly reopened gameplay work for charged shots, moving obstacles, universal enemy rebound, multiball and ultimate upgrades, Space dash, and better low-speed pickup. Backend/network/platform scope remains unapproved.
 
 - The original prototype is preserved in `origin/index.html` and `origin/design.md`.<br/>**原始原型保留在 `origin/index.html` 和 `origin/design.md`。**
 - The runnable app entry is now `index.html` plus `src/main.js`.<br/>**当前可运行入口为 `index.html` 与 `src/main.js`。**

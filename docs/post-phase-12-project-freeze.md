@@ -50,3 +50,9 @@ Do not implement:
 When Phase 12 later reports READY_FOR_CHECK, `$checkandgoal` may be used for validation, but `$goalnext` must not be run after PASS. The correct PASS outcome is project freeze/status closeout, not a new phase.
 
 If Phase 12 fails or is blocked, route the smallest Phase 12 repair only. The executor must not be asked to begin new scope while repair is pending.
+
+## Reopen Exception
+
+On 2026-07-02, the user explicitly reopened Eternal Ricochet for a gameplay-only Phase 13 covering charged shots, moving ricochet obstacles, universal enemy rebound, multiball and ultimate upgrades, Space dash, and low-speed bullet pickup improvements.
+
+This exception does not approve backend leaderboards, real network submission, native packaging, additional platform work, or unrelated roadmap phases.
