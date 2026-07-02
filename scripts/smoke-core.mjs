@@ -151,6 +151,39 @@ function smokeBulletPoolAmmoState() {
   assert.deepEqual(pool.getAmmoState(), { active: 1, available: 2, total: 3 });
 }
 
+function smokeBulletPickupGates() {
+  const bounds = { width: 420, height: 260 };
+  const player = new Player(bounds);
+  const bullet = new Bullet();
+
+  bullet.fireFrom({ x: player.x, y: player.y }, 0, { speed: 0 });
+  const immediate = bullet.update({ recallRequested: false, player, bounds });
+  assert.equal(bullet.active, true);
+  assert.equal(immediate.some((event) => event.type === "collect"), false);
+
+  bullet.x = player.x;
+  bullet.y = player.y;
+  bullet.vx = 1;
+  bullet.vy = 0;
+  bullet.activeFrames = GAME_CONFIG.bullet.pickup.minActiveFrames;
+  bullet.travelDistance = GAME_CONFIG.bullet.pickup.minTravelDistance;
+  const settled = bullet.update({ recallRequested: false, player, bounds });
+  assert.equal(settled.some((event) => event.type === "collect"), true);
+  assert.equal(bullet.active, false);
+
+  bullet.fireFrom({ x: player.x, y: player.y }, 0, { speed: 4 });
+  bullet.activeFrames = GAME_CONFIG.bullet.pickup.minActiveFrames;
+  bullet.travelDistance = GAME_CONFIG.bullet.pickup.minTravelDistance;
+  const fast = bullet.update({ recallRequested: false, player, bounds });
+  assert.equal(fast.some((event) => event.type === "collect"), false);
+  assert.equal(bullet.active, true);
+
+  bullet.fireFrom({ x: player.x, y: player.y }, 0, { speed: 0 });
+  const recalled = bullet.update({ recallRequested: true, player, bounds });
+  assert.equal(recalled.some((event) => event.type === "collect"), true);
+  assert.equal(bullet.active, false);
+}
+
 function smokeChargedShotSpeedClamp() {
   const bullet = new Bullet();
   const charge = GAME_CONFIG.bullet.charge;
@@ -1514,6 +1547,7 @@ function hasProjectileTrailStroke(ctx) {
 smokeBulletFireReset();
 smokePhase13ConfigDefaults();
 smokeBulletPoolAmmoState();
+smokeBulletPickupGates();
 smokeChargedShotSpeedClamp();
 smokeChargedMouseInputRelease();
 smokeUltimateInputLatch();

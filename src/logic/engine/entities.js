@@ -201,8 +201,7 @@ export class Bullet {
       events.push({ type: "wall-bounce", impactSpeedSq: wallBounce.impactSpeedSq });
     }
 
-    const speedSq = this.vx * this.vx + this.vy * this.vy;
-    if (speedSq < this.config.collectSpeedSq) {
+    if (this.canSettleCollect()) {
       const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
       if (distToPlayer < player.radius + this.radius + this.config.collectPadding) {
         this.collect();
@@ -213,6 +212,20 @@ export class Bullet {
 
     this.recordTrail();
     return events;
+  }
+
+  canSettleCollect() {
+    const pickupConfig = this.config.pickup ?? {};
+    const settledCollectSpeedSq = pickupConfig.settledCollectSpeedSq ?? this.config.collectSpeedSq;
+    const minActiveFrames = pickupConfig.minActiveFrames ?? 0;
+    const minTravelDistance = pickupConfig.minTravelDistance ?? 0;
+    const speedSq = this.vx * this.vx + this.vy * this.vy;
+
+    return (
+      speedSq < settledCollectSpeedSq &&
+      this.activeFrames >= minActiveFrames &&
+      this.travelDistance >= minTravelDistance
+    );
   }
 
   collect() {
