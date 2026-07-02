@@ -81,6 +81,12 @@ export function createUpgradeShop({
     if (id === "energyShield") {
       return `Max HP +${upgrade.hpPerLevel} per level`;
     }
+    if (id === "multiball") {
+      return `Total balls +${upgrade.ballsPerLevel} per level`;
+    }
+    if (id === "ultimateCap") {
+      return `Ultimate charge +${upgrade.chargesPerLevel} per level`;
+    }
     return "Upgrade effect applies on the next run";
   }
 

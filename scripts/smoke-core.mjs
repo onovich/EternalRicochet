@@ -387,7 +387,10 @@ function smokeShooterProjectileLifecycle() {
 
 function smokeMetaProgressionPersistence() {
   const storage = createMemoryStorage();
-  assert.deepEqual(readMetaState(storage), createDefaultMetaState());
+  const defaultState = createDefaultMetaState();
+  assert.deepEqual(readMetaState(storage), defaultState);
+  assert.equal(defaultState.upgrades.multiball, 0);
+  assert.equal(defaultState.upgrades.ultimateCap, 0);
 
   storage.setItem(GAME_CONFIG.metaProgression.storageKey, "{bad json");
   assert.deepEqual(readMetaState(storage), createDefaultMetaState());
@@ -399,6 +402,8 @@ function smokeMetaProgressionPersistence() {
       gravityRecall: 99,
       armorPiercer: 2.8,
       energyShield: -1,
+      multiball: 99,
+      ultimateCap: 1.6,
       unknown: 99,
     },
   });
@@ -408,6 +413,8 @@ function smokeMetaProgressionPersistence() {
   assert.equal(sanitized.upgrades.gravityRecall, GAME_CONFIG.metaProgression.upgrades.gravityRecall.maxLevel);
   assert.equal(sanitized.upgrades.armorPiercer, 2);
   assert.equal(sanitized.upgrades.energyShield, 0);
+  assert.equal(sanitized.upgrades.multiball, GAME_CONFIG.metaProgression.upgrades.multiball.maxLevel);
+  assert.equal(sanitized.upgrades.ultimateCap, 1);
   assert.equal(sanitized.upgrades.unknown, undefined);
 }
 
@@ -429,6 +436,14 @@ function smokeMetaProgressionEconomy() {
   const tooExpensive = purchaseUpgrade(firstPurchase.state, "armorPiercer");
   assert.equal(tooExpensive.purchased, false);
   assert.equal(tooExpensive.reason, "insufficient-credits");
+
+  const multiballPurchase = purchaseUpgrade(
+    sanitizeMetaState({ credits: GAME_CONFIG.metaProgression.upgrades.multiball.baseCost }),
+    "multiball",
+  );
+  assert.equal(multiballPurchase.purchased, true);
+  assert.equal(multiballPurchase.state.credits, 0);
+  assert.equal(multiballPurchase.state.upgrades.multiball, 1);
 
   const maxedState = sanitizeMetaState({
     credits: 999,
@@ -459,7 +474,8 @@ function smokeMetaProgressionDevSeed() {
   const storage = createMemoryStorage();
   const seed = seedMetaStateFromSearch({
     storage,
-    search: "?erSeedMeta=1&credits=40&gravityRecall=1&armorPiercer=2&energyShield=99",
+    search:
+      "?erSeedMeta=1&credits=40&gravityRecall=1&armorPiercer=2&energyShield=99&multiball=2&ultimateCap=99",
   });
   const seededState = readMetaState(storage);
 
@@ -468,6 +484,8 @@ function smokeMetaProgressionDevSeed() {
   assert.equal(seededState.upgrades.gravityRecall, 1);
   assert.equal(seededState.upgrades.armorPiercer, 2);
   assert.equal(seededState.upgrades.energyShield, GAME_CONFIG.metaProgression.upgrades.energyShield.maxLevel);
+  assert.equal(seededState.upgrades.multiball, 2);
+  assert.equal(seededState.upgrades.ultimateCap, GAME_CONFIG.metaProgression.upgrades.ultimateCap.maxLevel);
   assert.equal(seedMetaStateFromSearch({ storage, search: "?credits=10" }), null);
 }
 
@@ -512,6 +530,7 @@ function smokeMetaProgressionUpgradeEffects() {
       gravityRecall: 2,
       armorPiercer: 3,
       energyShield: 1,
+      multiball: 2,
     },
   });
   const effective = createEffectiveRunConfig(state);
@@ -533,8 +552,21 @@ function smokeMetaProgressionUpgradeEffects() {
     effective.player.hp,
     GAME_CONFIG.player.hp + GAME_CONFIG.metaProgression.upgrades.energyShield.hpPerLevel,
   );
+  assert.equal(
+    effective.bullet.totalCount,
+    GAME_CONFIG.bullet.baseCount +
+      2 * GAME_CONFIG.metaProgression.upgrades.multiball.ballsPerLevel,
+  );
   assert.equal(GAME_CONFIG.player.hp, 3);
   assert.equal(GAME_CONFIG.bullet.recallForce, 2);
+  assert.equal(GAME_CONFIG.bullet.totalCount, undefined);
+
+  const capped = createEffectiveRunConfig(
+    sanitizeMetaState({
+      upgrades: { multiball: GAME_CONFIG.metaProgression.upgrades.multiball.maxLevel },
+    }),
+  );
+  assert.equal(capped.bullet.totalCount, GAME_CONFIG.bullet.maxCount);
 }
 
 function smokeRenderQualityResolution() {

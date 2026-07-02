@@ -157,6 +157,7 @@ export function createEffectiveRunConfig(metaState, baseConfig = GAME_CONFIG) {
   const gravityLevel = getUpgradeLevel("gravityRecall", state, baseConfig.metaProgression);
   const piercerLevel = getUpgradeLevel("armorPiercer", state, baseConfig.metaProgression);
   const shieldLevel = getUpgradeLevel("energyShield", state, baseConfig.metaProgression);
+  const multiballLevel = getUpgradeLevel("multiball", state, baseConfig.metaProgression);
 
   return {
     ...baseConfig,
@@ -166,6 +167,10 @@ export function createEffectiveRunConfig(metaState, baseConfig = GAME_CONFIG) {
     },
     bullet: {
       ...baseConfig.bullet,
+      totalCount: Math.min(
+        baseConfig.bullet.maxCount,
+        baseConfig.bullet.baseCount + multiballLevel * upgrades.multiball.ballsPerLevel,
+      ),
       recallForce:
         baseConfig.bullet.recallForce + gravityLevel * upgrades.gravityRecall.recallForcePerLevel,
       killDamping: Math.min(
