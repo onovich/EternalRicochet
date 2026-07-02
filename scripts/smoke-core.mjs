@@ -128,6 +128,23 @@ function smokePhase13ConfigDefaults() {
   assert.deepEqual(motionTypes, ["horizontal", "ellipse", "lissajous"]);
 }
 
+function smokePhase13UiCopyAndDebugAffordances() {
+  const indexSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.equal(indexSource.includes("按住左键蓄力松开发射"), true);
+  assert.equal(indexSource.includes("R或右键召回"), true);
+  assert.equal(indexSource.includes("Space冲刺"), true);
+  assert.equal(indexSource.includes("F终极清场"), true);
+  assert.equal(indexSource.includes("空格召回"), false);
+
+  const runtimeSource = readFileSync(
+    new URL("../src/logic/engine/gameRuntime.js", import.meta.url),
+    "utf8",
+  );
+  for (const token of ["pickupReady", "motionType", "bulletPickup", "ultimateRadius", "controls"]) {
+    assert.equal(runtimeSource.includes(token), true, `gameRuntime debug state should expose ${token}`);
+  }
+}
+
 function smokeBulletPoolAmmoState() {
   const pool = createBulletPool({ total: 3, config: GAME_CONFIG.bullet });
 
@@ -1546,6 +1563,7 @@ function hasProjectileTrailStroke(ctx) {
 
 smokeBulletFireReset();
 smokePhase13ConfigDefaults();
+smokePhase13UiCopyAndDebugAffordances();
 smokeBulletPoolAmmoState();
 smokeBulletPickupGates();
 smokeChargedShotSpeedClamp();

@@ -536,19 +536,8 @@ export function createGameRuntime({
       score,
       frameCount,
       player: player ? { hp: player.hp, x: player.x, y: player.y, dash: player.getDashState() } : null,
-      bullet: {
-        active: bulletPool.getPrimary().active,
-        isRecalling: bulletPool.getPrimary().isRecalling,
-        trailLength: bulletPool.getPrimary().trail.length,
-      },
-      bullets: bulletPool.bullets.map((bullet) => ({
-        id: bullet.id,
-        active: bullet.active,
-        isRecalling: bullet.isRecalling,
-        x: bullet.x,
-        y: bullet.y,
-        trailLength: bullet.trail.length,
-      })),
+      bullet: summarizeBullet(bulletPool.getPrimary()),
+      bullets: bulletPool.bullets.map(summarizeBullet),
       ammo: bulletPool.getAmmoState(),
       charge: input.getChargeState(),
       ultimate: {
@@ -567,7 +556,12 @@ export function createGameRuntime({
         id: obstacle.id,
         x: obstacle.x,
         y: obstacle.y,
+        originX: obstacle.originX,
+        originY: obstacle.originY,
+        vx: obstacle.vx,
+        vy: obstacle.vy,
         radius: obstacle.radius,
+        motionType: obstacle.motion?.type ?? null,
       })),
       projectiles: projectiles.map((projectile) => ({
         active: projectile.active,
@@ -587,11 +581,15 @@ export function createGameRuntime({
       devStress: devStressSeed,
       particlePool: particlePool.getStats(),
       runConfig: {
+        controls: runConfig.controls,
         playerHp: runConfig.player.hp,
+        dash: runConfig.player.dash,
         bulletRecallForce: runConfig.bullet.recallForce,
         bulletKillDamping: runConfig.bullet.killDamping,
+        bulletPickup: runConfig.bullet.pickup,
         bulletTotalCount: runConfig.bullet.totalCount ?? runConfig.bullet.baseCount,
         ultimateCharges: runConfig.ultimate.charges ?? runConfig.ultimate.baseCharges,
+        ultimateRadius: runConfig.ultimate.radius,
       },
     };
   }
@@ -644,4 +642,20 @@ function normalizeNonZero(vector) {
   const length = Math.hypot(vector.x, vector.y);
   if (length <= Number.EPSILON) return null;
   return { x: vector.x / length, y: vector.y / length };
+}
+
+function summarizeBullet(bullet) {
+  const speed = Math.hypot(bullet.vx, bullet.vy);
+  return {
+    id: bullet.id,
+    active: bullet.active,
+    isRecalling: bullet.isRecalling,
+    x: bullet.x,
+    y: bullet.y,
+    speed,
+    activeFrames: bullet.activeFrames,
+    travelDistance: bullet.travelDistance,
+    trailLength: bullet.trail.length,
+    pickupReady: bullet.active ? bullet.canSettleCollect() : false,
+  };
 }

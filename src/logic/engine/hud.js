@@ -39,7 +39,7 @@ export function createHud(documentRef = document) {
     const ammo = ammoState ?? { available: bulletActive ? 0 : 1, total: 1 };
     ammoDisplay.innerText = `${ammo.available} / ${ammo.total}`;
     if (ultimateDisplay) {
-      ultimateDisplay.innerText = `${ultimate?.charges ?? 0}`;
+      ultimateDisplay.innerText = `${ultimate?.charges ?? 0} / ${ultimate?.maxCharges ?? 0}`;
       ultimateDisplay.classList.toggle("text-gray-600", !ultimate?.canUse);
       ultimateDisplay.classList.toggle("text-fuchsia-300", Boolean(ultimate?.canUse));
     }
